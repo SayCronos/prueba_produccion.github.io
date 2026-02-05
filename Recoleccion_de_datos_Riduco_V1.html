@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ronda en Planta - Riduco Manizales</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 20px 60px rgba(16, 185, 129, 0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><defs><pattern id="grain" width="100" height="20" patternUnits="userSpaceOnUse"><circle cx="5" cy="5" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="25" cy="15" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="75" cy="8" r="0.8" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="20" fill="url(%23grain)"/></svg>');
+            pointer-events: none;
+        }
+        
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .form-section {
+            padding: 2rem;
+        }
+        
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border: 2px solid #bbf7d0;
+            border-radius: 0.75rem;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            position: relative;
+        }
+        
+        label {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #047857;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        input, select, textarea {
+            padding: 0.875rem 1rem;
+            border: 2px solid #d1fae5;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-family: inherit;
+            background: white;
+            transition: all 0.2s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+        
+        select {
+            cursor: pointer;
+            background: white;
+        }
+        
+        .autocomplete-container {
+            position: relative;
+        }
+        
+        .autocomplete-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #10b981;
+            border-top: none;
+            border-radius: 0 0 0.5rem 0.5rem;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2);
+        }
+        
+        .autocomplete-list.show {
+            display: block;
+        }
+        
+        .autocomplete-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid #d1fae5;
+            transition: background 0.2s;
+        }
+        
+        .autocomplete-item:hover {
+            background: #ecfdf5;
+        }
+        
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+        
+        .autocomplete-code {
+            font-weight: 700;
+            color: #047857;
+        }
+        
+        .autocomplete-name {
+            font-size: 0.875rem;
+            color: #059669;
+            margin-top: 0.25rem;
+        }
+        
+        .btn {
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+        
+        .record-form {
+            background: white;
+            border: 2px solid #d1fae5;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.1);
+        }
+        
+        .record-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .select-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            background: #f0fdf4;
+            border-radius: 0.5rem;
+            border: 2px solid #bbf7d0;
+        }
+        
+        .select-group label {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #047857;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .yesno-select {
+            padding: 0.75rem;
+            border: 2px solid #d1fae5;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            background: white;
+            color: #065f46;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .yesno-select:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .record-card {
+            background: white;
+            border: 2px solid #d1fae5;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+            box-shadow: 0 2px 10px rgba(16, 185, 129, 0.1);
+        }
+        
+        .record-card:hover {
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .record-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #bbf7d0;
+        }
+        
+        .record-card-header h3 {
+            color: #047857;
+            font-size: 1.125rem;
+            font-weight: 700;
+        }
+        
+        .record-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .detail-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #059669;
+            font-weight: 600;
+        }
+        
+        .detail-value {
+            font-size: 0.95rem;
+            color: #065f46;
+            font-weight: 500;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        
+        .badge-success {
+            background: #dcfce7;
+            color: #047857;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+        
+        .actions-bar {
+            position: sticky;
+            bottom: 0;
+            background: white;
+            padding: 1rem 2rem;
+            border-top: 3px solid #10b981;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            box-shadow: 0 -4px 15px rgba(16, 185, 129, 0.1);
+        }
+        
+        .toast {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 40px rgba(4, 120, 87, 0.4);
+            transform: translateX(400px);
+            transition: transform 0.3s;
+            z-index: 9999;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+        
+        @media (max-width: 768px) {
+            .metadata-grid, .record-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .actions-bar {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            body {
+                padding: 0.5rem;
+            }
+        }
+        
+        .info-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 RECOLECCIÓN DE DATOS</h1>
+            <p>Ronda en Planta - Equipos Autónomos (Manizales)</p>
+        </div>
+        
+        <div class="form-section">
+            <div class="metadata-grid">
+                <div class="form-group">
+                    <label for="fecha">📅 Fecha</label>
+                    <input type="date" id="fecha" required>
+                </div>
+                <div class="form-group">
+                    <label for="turno">⏰ Turno</label>
+                    <select id="turno" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="MAÑANA">MAÑANA</option>
+                        <option value="TARDE">TARDE</option>
+                        <option value="NOCHE">NOCHE</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="lider">👤 Líder</label>
+                    <select id="lider" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="LUIS FERNANDO VILLEGAS">LUIS FERNANDO VILLEGAS</option>
+                        <option value="PAOLA CARDONA">PAOLA CARDONA</option>
+                        <option value="JUAN SEBASTIAN TREJOS">JUAN SEBASTIAN TREJOS</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="info-badge">
+                💡 <strong>Base de datos:</strong> Busca por código 
+            </div>
+            
+            <div class="record-form">
+                <h2 style="margin-bottom: 1.5rem; color: #374151;">➕ Nuevo Registro</h2>
+                
+                <div class="record-grid">
+                    <div class="form-group">
+                        <label for="maquina">🔧 Máquina *</label>
+                        <select id="maquina" required>
+                            <option value="">Seleccionar...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group autocomplete-container">
+                        <label for="codigoProducto">🔍 Código Producto *</label>
+                        <input type="text" id="codigoProducto" placeholder="Escribe para buscar..." autocomplete="off">
+                        <div id="autocompleteList" class="autocomplete-list"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="ordenProduccion">📦 Orden Producción/Molde</label>
+                        <input type="text" id="ordenProduccion">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="codigoPieza">🏷️ Nombre Pieza *</label>
+                        <input type="text" id="codigoPieza" readonly style="background: #f9fafb;">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="pesoBrutoTeorico">⚖️ Peso Bruto Teórico (g)</label>
+                        <input type="number" id="pesoBrutoTeorico" step="0.01" readonly style="background: #f9fafb;">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="pesoBrutoReal">⚖️ Peso Bruto Real (g)</label>
+                        <input type="number" id="pesoBrutoReal" step="0.01">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="pesoNetoTeorico">⚖️ Peso Neto Teórico (g)</label>
+                        <input type="number" id="pesoNetoTeorico" step="0.01" readonly style="background: #f9fafb;">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="pesoNetoReal">⚖️ Peso Neto Real (g)</label>
+                        <input type="number" id="pesoNetoReal" step="0.01">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cicloFicha">⏱️ Ciclo Ficha (seg)</label>
+                        <input type="number" id="cicloFicha" step="0.01" readonly style="background: #f9fafb;">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cicloReal">⏱️ Ciclo Real (seg)</label>
+                        <input type="number" id="cicloReal" step="0.01">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="operarios">👥 Código(s)/Nombre(s) Operario(s) *</label>
+                        <input type="text" id="operarios" required>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                    <div class="select-group">
+                        <label>📄 Instructivo</label>
+                        <select id="instructivo" class="yesno-select">
+                            <option value="NO">NO</option>
+                            <option value="SÍ">SÍ</option>
+                        </select>
+                    </div>
+                    <div class="select-group">
+                        <label>🔧 Mattec</label>
+                        <select id="mattec" class="yesno-select">
+                            <option value="NO">NO</option>
+                            <option value="SÍ">SÍ</option>
+                        </select>
+                    </div>
+                    <div class="select-group">
+                        <label>⚠️ Alerta</label>
+                        <select id="alerta" class="yesno-select">
+                            <option value="NO">NO</option>
+                            <option value="SÍ">SÍ</option>
+                        </select>
+                    </div>
+                    <div class="select-group">
+                        <label>⚙️ Cavidades</label>
+                        <select id="cavidades" class="yesno-select">
+                            <option value="NO">NO</option>
+                            <option value="SÍ">SÍ</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="observaciones">📝 Observaciones</label>
+                    <textarea id="observaciones" rows="3"></textarea>
+                </div>
+                
+                <button class="btn btn-primary" onclick="agregarRegistro()" style="width: 100%; margin-top: 1rem;">
+                    ➕ Agregar Registro
+                </button>
+            </div>
+            
+            <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="color: #374151;" id="recordCount">📝 0 registros</h2>
+            </div>
+            
+            <div id="recordsList"></div>
+        </div>
+        
+        <div class="actions-bar">
+            <button class="btn btn-success" onclick="descargarExcel()" style="flex: 1;">
+                📊 Descargar EXCEL (.xlsx)
+            </button>
+            <button class="btn btn-danger" onclick="limpiarTodo()">
+                🗑️ Limpiar Todo
+            </button>
+        </div>
+    </div>
+    
+    <div id="toast" class="toast"></div>
+    
+     <script>
+        // Base de datos de productos
+        const productosDB = {
+            "03INY0010": { nombre: "TAPON CENTRAL MESA AZUL", pesoNeto: 16.00, pesoBruto: 16.00, ciclo: 50.00 },
+            "03INY0012": { nombre: "TAPON CENTRAL MESA ROJA", pesoNeto: 16.00, pesoBruto: 16.00, ciclo: 50.00 },
+            "03INY0021": { nombre: "TAPON CENTRAL MESA BEIGE ARENA", pesoNeto: 16.00, pesoBruto: 16.00, ciclo: 50.00 },
+            "03INY0029": { nombre: "TORNILLO NIVELADOR MESA AZUL", pesoNeto: 12.50, pesoBruto: 12.50, ciclo: 40.00 },
+            "03INY0030": { nombre: "TORNILLO NIVELADOR MESA ROJO", pesoNeto: 12.50, pesoBruto: 12.50, ciclo: 40.00 },
+            "03INY0032": { nombre: "TORNILLO NIVELADOR MESA BEIGE ARENA", pesoNeto: 12.50, pesoBruto: 12.50, ciclo: 40.00 },
+            "03INY0034": { nombre: "TORNILLO NIVELADOR MESA VERDE", pesoNeto: 12.50, pesoBruto: 13.50, ciclo: 40.00 },
+            "03INY0040": { nombre: "MANIJA P'BAND REC NEGRA", pesoNeto: 2.00, pesoBruto: 2.00, ciclo: 28.00 },
+            "03INY0047": { nombre: "PATAS MESA GRILL BLANCA", pesoNeto: 347.00, pesoBruto: 368.00, ciclo: 60.00 },
+            "03INY0048": { nombre: "TORNILLO NIVELADOR MESA BLANCO", pesoNeto: 12.50, pesoBruto: 12.50, ciclo: 40.00 },
+            "03INY0049": { nombre: "TAPON MESA GRILL ANTIDESLIZANT", pesoNeto: 16.00, pesoBruto: 16.00, ciclo: 41.00 },
+            "03INY0069": { nombre: "BASE GANCHO LEGAJ.NUEVO TRANSP", pesoNeto: 1.50, pesoBruto: 1.50, ciclo: 18.00 },
+            "03INY0072": { nombre: "DESLIZADOR GANCHO LEGAJ TRANSP", pesoNeto: 0.30, pesoBruto: 0.30, ciclo: 23.00 },
+            "03INY0128": { nombre: "PATAS MESA GRILL AZUL", pesoNeto: 347.00, pesoBruto: 368.00, ciclo: 60.00 },
+            "03INY0140": { nombre: "INSERTO SILLA IMPERIAL GARDEN BLANCA", pesoNeto: 210.00, pesoBruto: 214.00, ciclo: 40.00 },
+            "03INY0142": { nombre: "INSERTO SILLA IMPERIAL GARDEN VERDE", pesoNeto: 210.00, pesoBruto: 210.00, ciclo: 40.00 },
+            "03INY0143": { nombre: "INS MESA TOBAGO BLANCA", pesoNeto: 821.00, pesoBruto: 821.00, ciclo: 76.00 },
+            "03INY0144": { nombre: "INS MESA TOBAGO BEIGE ARENA", pesoNeto: 835.00, pesoBruto: 836.00, ciclo: 76.00 },
+            "03INY0159": { nombre: "PATAS MESA RHONDA BLANCAS", pesoNeto: 674.00, pesoBruto: 690.00, ciclo: 100.00 },
+            "03INY0160": { nombre: "TAPON CENTRAL MESA BLANCA", pesoNeto: 16.00, pesoBruto: 16.50, ciclo: 46.00 },
+            "03INY0162": { nombre: "PATAS MESA GRILL VERDE", pesoNeto: 347.00, pesoBruto: 347.00, ciclo: 60.00 },
+            "03INY0173": { nombre: "SILLA IMPERIAL BLANCA", pesoNeto: 3800.00, pesoBruto: 3800.00, ciclo: 137.20 },
+            "03INY0174": { nombre: "TAPON CENTRAL MESA VERDE", pesoNeto: 16.00, pesoBruto: 16.00, ciclo: 50.00 },
+            "03INY0175": { nombre: "SILLA IMPERIAL VERDE", pesoNeto: 3800.00, pesoBruto: 3800.00, ciclo: 137.20 },
+            "03INY0178": { nombre: "BASE SOMBR MES RHONDA BLAN 46\"", pesoNeto: 716.00, pesoBruto: 716.00, ciclo: 40.00 },
+            "03INY0225": { nombre: "BASE SILLA BERMUDA BEIGE ARENA", pesoNeto: 3920.00, pesoBruto: 3955.00, ciclo: 90.00 },
+            "03INY0229": { nombre: "BASE MESA OCTOGONAL BLANCA", pesoNeto: 5565.00, pesoBruto: 5565.00, ciclo: 120.00 },
+            "03INY0234": { nombre: "ESPALDAR SILLA BERMUDA BEIGE ARENA", pesoNeto: 1820.00, pesoBruto: 1820.00, ciclo: 121.00 },
+            "03INY0238": { nombre: "INSERTO MESA OCTOGONAL VERDE", pesoNeto: 3175.00, pesoBruto: 3178.00, ciclo: 157.00 },
+            "03INY0239": { nombre: "BASE SOMB.MESA OCTAG BLANCA", pesoNeto: 716.00, pesoBruto: 721.00, ciclo: 65.00 },
+            "03INY0243": { nombre: "INS.BASE DERECHO BEIGE-ARENA", pesoNeto: 150.00, pesoBruto: 152.00, ciclo: 17.50 },
+            "03INY0247": { nombre: "INS.BASE IZQUIERDO BEIGE ARENA", pesoNeto: 150.00, pesoBruto: 152.00, ciclo: 17.50 },
+            "03INY0251": { nombre: "INSERTO BASE CORTO BEIGE ARENA", pesoNeto: 120.60, pesoBruto: 122.60, ciclo: 17.50 },
+            "03INY0255": { nombre: "INSERTO ESPALDAR CORTO BEIGE-ARENA", pesoNeto: 120.60, pesoBruto: 122.60, ciclo: 17.50 },
+            "03INY0259": { nombre: "INSERTO ESPALDAR DERECHO BEIGE ARENA", pesoNeto: 227.60, pesoBruto: 229.60, ciclo: 17.50 },
+            "03INY0263": { nombre: "INSERTO ESPALDAR IZQ.BEIGE ARE", pesoNeto: 227.60, pesoBruto: 229.60, ciclo: 17.50 },
+            "03INY0267": { nombre: "INSERTO ESPALDAR ANCHO DERECHO BEIGE ARENA", pesoNeto: 275.10, pesoBruto: 277.10, ciclo: 17.50 },
+            "03INY0271": { nombre: "INSERTO ESPALDAR ANCHO IZQUIERDO BEIGE-ARENA", pesoNeto: 275.10, pesoBruto: 277.10, ciclo: 17.50 },
+            "03INY0282": { nombre: "ASIENTO SILLA BAHIA BLANCA", pesoNeto: 1955.00, pesoBruto: 1972.00, ciclo: 168.00 },
+            "03INY0291": { nombre: "TELA BASE SILLA BERMUDA DESER SAND CORTADA Y SELLADA", pesoNeto: 540.00, pesoBruto: 540.00, ciclo: 0 },
+            "03INY0403": { nombre: "ESPALDAR SILLA BAHIA BLANCA", pesoNeto: 1570.00, pesoBruto: 1584.00, ciclo: 168.00 },
+            "03INY0404": { nombre: "BASE DESC PIES SILLA BAHIA BCA", pesoNeto: 392.00, pesoBruto: 396.00, ciclo: 74.00 },
+            "03INY0405": { nombre: "DESCANSAPIES SILLA BAHIA BLANC", pesoNeto: 1184.00, pesoBruto: 1188.00, ciclo: 74.00 },
+            "03INY0406": { nombre: "PATAS MESA GRILL AMARILLA", pesoNeto: 347.00, pesoBruto: 368.00, ciclo: 60.00 },
+            "03INY0412": { nombre: "PATAS MESA GRILL BEIGE ARENA", pesoNeto: 347.00, pesoBruto: 368.00, ciclo: 60.00 },
+            "03INY0422": { nombre: "TELA ESPALDAR SILLA BERMUDA DESERT SAND CORTADA Y SELLADA", pesoNeto: 540.00, pesoBruto: 540.00, ciclo: 60.00 },
+            "03INY0427": { nombre: "TAPA BANDEJA VEGETAL POLAR SIN VIDRIO SIN INSERTO", pesoNeto: 358.00, pesoBruto: 358.00, ciclo: 60.00 },
+            "03INY0428": { nombre: "BASE Y RUEDA RODACHINA  RIDUCO", pesoNeto: 14.20, pesoBruto: 17.20, ciclo: 50.00 },
+            "03INY0429": { nombre: "GANCHO LEGAJADOR TRANSPARENTE NUEVO 903", pesoNeto: 1.20, pesoBruto: 1.20, ciclo: 18.00 },
+            "03INY0430": { nombre: "PATAS MESA GRILL ROJA", pesoNeto: 347.00, pesoBruto: 347.00, ciclo: 60.00 },
+            "03INY0516": { nombre: "BANDEJA REC S'AGA BEIGE", pesoNeto: 542.00, pesoBruto: 542.00, ciclo: 86.00 },
+            "03INY0517": { nombre: "BANDEJA RECT CON AGARR BLANCA PP", pesoNeto: 542.00, pesoBruto: 542.00, ciclo: 86.00 },
+            "03INY0518": { nombre: "CARENAJE TS 125 BLANCO SIN PULIR", pesoNeto: 252.00, pesoBruto: 262.00, ciclo: 60.00 },
+            "03INY0519": { nombre: "CARENAJE TS 125 ROJO SIN PULIR", pesoNeto: 252.00, pesoBruto: 262.00, ciclo: 60.00 },
+            "03INY0521": { nombre: "CARENAJE TS 125 AZUL SIN PULIR", pesoNeto: 252.00, pesoBruto: 262.00, ciclo: 60.00 },
+            "03INY0522": { nombre: "MESA TOBAGO BEIGE ARENA SIN INSERTO", pesoNeto: 1755.00, pesoBruto: 1758.00, ciclo: 86.00 },
+            "03INY0523": { nombre: "MESA TOBAGO BLANCA S.INS", pesoNeto: 1734.00, pesoBruto: 1737.00, ciclo: 108.00 },
+            "03INY0524": { nombre: "MESA TOBAGO VERDE S'INS", pesoNeto: 1755.00, pesoBruto: 1758.00, ciclo: 108.00 },
+            "03INY0539": { nombre: "ABATIBLE PEQUE¿A VERDE PP", pesoNeto: 100.00, pesoBruto: 100.00, ciclo: 32.00 },
+            "03INY0540": { nombre: "ABATIBLE PEQUEÑA BEIGE PP", pesoNeto: 100.00, pesoBruto: 100.00, ciclo: 32.00 },
+            "03INY0545": { nombre: "ABATIBLE PEQUE¿O BLANCO PP", pesoNeto: 100.00, pesoBruto: 100.00, ciclo: 32.00 },
+            "03INY0546": { nombre: "ABATIBLE PEQUEÑO AZUL PP", pesoNeto: 100.00, pesoBruto: 100.00, ciclo: 32.00 },
+            "03INY0548": { nombre: "ABATIBLE PEQUEÑO ROJO PP", pesoNeto: 100.00, pesoBruto: 100.00, ciclo: 32.00 },
+            "03INY0553": { nombre: "ABATIBLE GRANDE BLANCO PP", pesoNeto: 152.00, pesoBruto: 152.00, ciclo: 40.00 },
+            "03INY0554": { nombre: "ABATIBLE GRANDE BEIGE PP", pesoNeto: 152.00, pesoBruto: 152.00, ciclo: 40.00 },
+            "03INY0555": { nombre: "ABATIBLE GRANDE AZUL PP", pesoNeto: 152.00, pesoBruto: 152.00, ciclo: 40.00 },
+            "03INY0557": { nombre: "ABATIBLE GRANDE ROJO PP", pesoNeto: 152.00, pesoBruto: 152.00, ciclo: 40.00 },
+            "03INY0558": { nombre: "ABATIBLE GRANDE VERDE PP", pesoNeto: 152.00, pesoBruto: 152.00, ciclo: 40.00 },
+            "03INY0574": { nombre: "SOPORTE ORGANI ZAPATERO BLANCO", pesoNeto: 47.00, pesoBruto: 48.00, ciclo: 38.00 },
+            "03INY0607": { nombre: "INS MESA TOBAGO AMARILLO", pesoNeto: 821.00, pesoBruto: 822.00, ciclo: 76.00 },
+            "03INY0608": { nombre: "INS MESA TOBAGO ROJO", pesoNeto: 821.00, pesoBruto: 822.00, ciclo: 76.00 },
+            "03INY0609": { nombre: "INS MESA TOBAGO MAGENTA VANITY", pesoNeto: 821.00, pesoBruto: 822.00, ciclo: 76.00 },
+            "03INY0641": { nombre: "SILLA BAHIA BLANCA SIN EMPACAR", pesoNeto: 2220.00, pesoBruto: 2220.00, ciclo: 240.00 },
+            "03INY0689": { nombre: "RESORTE PLASTICO JUMBO", pesoNeto: 10.00, pesoBruto: 11.50, ciclo: 26.00 },
+            "03INY0691": { nombre: "LLAVE PLASTICA", pesoNeto: 3.80, pesoBruto: 4.80, ciclo: 24.00 },
+            "03INY0693": { nombre: "RESORTE PLASTICO BULK PACK", pesoNeto: 11.00, pesoBruto: 12.00, ciclo: 27.00 },
+            "03INY0694": { nombre: "CONVERTOR CHAPA", pesoNeto: 1.50, pesoBruto: 2.00, ciclo: 24.00 },
+            "03INY0695": { nombre: "VISOR FRONTAL JUMBO ACRÍLICO", pesoNeto: 56.00, pesoBruto: 60.00, ciclo: 54.00 },
+            "03INY0696": { nombre: "VISOR FRONTAL ESTÁNDAR ACRILICO", pesoNeto: 33.00, pesoBruto: 35.50, ciclo: 55.00 },
+            "03INY0702": { nombre: "ESTUCHE JABON TRANSP 40G", pesoNeto: 8.60, pesoBruto: 9.00, ciclo: 38.00 },
+            "03INY0703": { nombre: "TAPA TOALLERO JUMBO IMP", pesoNeto: 356.00, pesoBruto: 360.00, ciclo: 50.00 },
+            "03INY0705": { nombre: "TAPA TOALLERO COMPACTO IMP", pesoNeto: 300.00, pesoBruto: 302.00, ciclo: 55.00 },
+            "03INY0706": { nombre: "TAPA TOALLERO BULK PACK IMP", pesoNeto: 342.00, pesoBruto: 344.00, ciclo: 55.00 },
+            "03INY0713": { nombre: "TAPA TOALLERO JUMBO EKOLOGICO", pesoNeto: 356.00, pesoBruto: 360.00, ciclo: 50.00 },
+            "03INY0714": { nombre: "BASE TOALLERO JUMBO EKO", pesoNeto: 420.00, pesoBruto: 421.00, ciclo: 56.00 },
+            "03INY0726": { nombre: "BASE TOALLERO ESTANDAR EKO", pesoNeto: 682.00, pesoBruto: 685.00, ciclo: 62.00 },
+            "03INY0747": { nombre: "VISOR FRONTAL JUMBO SAN368R", pesoNeto: 60.00, pesoBruto: 60.00, ciclo: 49.00 },
+            "03INY0748": { nombre: "K - VISOR FRONTAL BULK PACK SAN 368R", pesoNeto: 18.00, pesoBruto: 18.00, ciclo: 39.00 },
+            "03INY0749": { nombre: "VISOR FRONTAL COMPACTO SAN368R", pesoNeto: 37.00, pesoBruto: 38.50, ciclo: 44.00 },
+            "03INY0750": { nombre: "K - VISOR FRONTAL ESTANDAR SAN 368R", pesoNeto: 26.00, pesoBruto: 26.00, ciclo: 40.00 },
+            "03INY0774": { nombre: "PATAS MESA GRILL NEGRA", pesoNeto: 347.00, pesoBruto: 368.00, ciclo: 60.00 },
+            "03INY0775": { nombre: "TORNILLO NIVELADOR MESA NEGRO", pesoNeto: 12.50, pesoBruto: 12.50, ciclo: 40.00 },
+            "03INY0813": { nombre: "TACON SILLA SANTORINI", pesoNeto: 5.40, pesoBruto: 5.40, ciclo: 60.00 },
+            "03INY0836": { nombre: "PUERTA ARMARIO FUCSIA", pesoNeto: 565.00, pesoBruto: 565.00, ciclo: 68.00 },
+            "03INY0838": { nombre: "PUERTA ARMARIO GRIS CLARO", pesoNeto: 565.00, pesoBruto: 570.00, ciclo: 68.00 },
+            "03INY0850": { nombre: "ABATIBLE GRANDE GRIS MB", pesoNeto: 152.00, pesoBruto: 152.00, ciclo: 40.00 },
+            "03INY0851": { nombre: "ABATIBLE PEQUEÑO GRIS MB", pesoNeto: 100.00, pesoBruto: 100.00, ciclo: 32.00 },
+            "03INY0857": { nombre: "MATERA #4 NEGRA", pesoNeto: 440.00, pesoBruto: 440.00, ciclo: 70.00 },
+            "03INY0858": { nombre: "PLATO #4 NEGRO", pesoNeto: 185.00, pesoBruto: 185.00, ciclo: 48.00 },
+            "03INY0879": { nombre: "MODULO ARMARIO BLANCO", pesoNeto: 1005.00, pesoBruto: 1010.00, ciclo: 70.00 },
+            "03INY0880": { nombre: "ENTREPAÑO ARMARIO BLANCO", pesoNeto: 645.00, pesoBruto: 650.00, ciclo: 67.00 },
+            "03INY0881": { nombre: "PUERTA ARMARIO BLANCO", pesoNeto: 565.00, pesoBruto: 570.00, ciclo: 68.00 },
+            "03INY0882": { nombre: "PISO ARMARIO BLANCO", pesoNeto: 730.00, pesoBruto: 733.00, ciclo: 67.00 },
+            "03INY0883": { nombre: "RETENEDOR MODULO ARMARIO BLANCO", pesoNeto: 3.50, pesoBruto: 4.00, ciclo: 30.00 },
+            "03INY0885": { nombre: "ENSAMBLE TAPA CAJON LEGUMBES PERSEUS MOD PSC 678", pesoNeto: 1010.00, pesoBruto: 1010.00, ciclo: 100.00 },
+            "03INY0889": { nombre: "CHAROLA FABRICADOR HIELOS PSC 678", pesoNeto: 191.00, pesoBruto: 191.00, ciclo: 40.00 },
+            "03INY0890": { nombre: "ENSAMBLE SOPORTE FABRICADOR HIELOS PSC 678", pesoNeto: 185.00, pesoBruto: 190.00, ciclo: 40.00 },
+            "03INY0893": { nombre: "TAPA SCOTT BLANCA", pesoNeto: 12.00, pesoBruto: 12.00, ciclo: 9.00 },
+            "03INY0894": { nombre: "TAPA SCOTT AZUL", pesoNeto: 12.00, pesoBruto: 12.00, ciclo: 9.00 },
+            "03INY0895": { nombre: "TAPA SCOTT VERDE 347", pesoNeto: 12.00, pesoBruto: 12.00, ciclo: 9.00 },
+            "03INY0896": { nombre: "BASE TOALLERO COMPACTO PIG LIQ", pesoNeto: 493.00, pesoBruto: 496.00, ciclo: 70.00 },
+            "03INY0897": { nombre: "TAPA TOALLERO COMPACTO PIG LIQ", pesoNeto: 300.00, pesoBruto: 302.00, ciclo: 55.00 },
+            "03INY0898": { nombre: "BASE TOALLERO JUMBO PIG LIQ", pesoNeto: 420.00, pesoBruto: 421.00, ciclo: 50.00 },
+            "03INY0899": { nombre: "TAPA TOALLERO JUMBO PIG LIQ", pesoNeto: 356.00, pesoBruto: 360.00, ciclo: 50.00 },
+            "03INY0900": { nombre: "BASE TOALLERO ESTANDAR PIG LIQ", pesoNeto: 682.00, pesoBruto: 685.00, ciclo: 65.00 },
+            "03INY0901": { nombre: "TAPA TOALLERO ESTANDAR PIG LIQ", pesoNeto: 522.00, pesoBruto: 525.00, ciclo: 49.00 },
+            "03INY0902": { nombre: "BASE TOALLER BULK PACK PIG LIQ", pesoNeto: 402.20, pesoBruto: 405.20, ciclo: 64.00 },
+            "03INY0903": { nombre: "TAPA TOALLER BULK PACK PIG LIQ", pesoNeto: 342.00, pesoBruto: 344.00, ciclo: 55.00 },
+            "03INY0918": { nombre: "ABATIBLE BASURERO 25 LT AZUL", pesoNeto: 95.00, pesoBruto: 95.00, ciclo: 35.00 },
+            "03INY0919": { nombre: "ABATIBLE BASURERO 25 LT GRIS", pesoNeto: 95.00, pesoBruto: 95.00, ciclo: 35.00 },
+            "03INY0921": { nombre: "BASE ABATIBLE BASURERO 25 LT AZUL", pesoNeto: 100.00, pesoBruto: 114.00, ciclo: 40.00 },
+            "03INY0922": { nombre: "BASE ABATIBLE BASURERO 25 LT GRIS", pesoNeto: 100.00, pesoBruto: 114.00, ciclo: 40.00 },
+            "03INY0944": { nombre: "TAPON SILLA CAFF DER A PRESION", pesoNeto: 6.80, pesoBruto: 6.80, ciclo: 50.00 },
+            "03INY0945": { nombre: "TAPON SILLA CAFF IZQ A PRESION", pesoNeto: 6.80, pesoBruto: 6.80, ciclo: 50.00 },
+            "03INY0950": { nombre: "RESORTE DISPENSADORES MOD", pesoNeto: 8.00, pesoBruto: 9.00, ciclo: 30.00 },
+            "03INY0951": { nombre: "BOTON  BLANCO DISPENSADOR MOD", pesoNeto: 0.25, pesoBruto: 0.89, ciclo: 30.00 },
+            "03INY0952": { nombre: "BOTON NEGRO DISPENSADOR MOD", pesoNeto: 0.25, pesoBruto: 0.89, ciclo: 30.00 },
+            "03INY0953": { nombre: "CONVERTOR  BLANCO DISPENSADOR MOD", pesoNeto: 0.60, pesoBruto: 1.24, ciclo: 30.00 },
+            "03INY0954": { nombre: "CONVERTOR  NEGRO DISPENSADOR MOD", pesoNeto: 0.60, pesoBruto: 1.24, ciclo: 30.00 },
+            "03INY0959": { nombre: "BASE NEGRA JRT", pesoNeto: 289.00, pesoBruto: 289.00, ciclo: 40.00 },
+            "03INY0962": { nombre: "BASE NEGRA HBT", pesoNeto: 270.00, pesoBruto: 270.00, ciclo: 50.00 },
+            "03INY0965": { nombre: "BASE NEGRA-NEGRA SCOTT FOLD", pesoNeto: 484.00, pesoBruto: 484.00, ciclo: 60.00 },
+            "03INY0977": { nombre: "TAPA TIPO C 77MM LOGO VERDE NAVIDEÑO SIN ENSAMBLAR", pesoNeto: 27.10, pesoBruto: 30.70, ciclo: 27.00 },
+            "03INY0979": { nombre: "TAPA TIPO C 77MM LOGO DORADO METALIZADO SIN ENSAMBLAR", pesoNeto: 27.10, pesoBruto: 30.70, ciclo: 27.00 },
+            "03INY0981": { nombre: "TAPA  TIPO F 53MM CAFÉ MET ENG ESP SIN LINER", pesoNeto: 15.40, pesoBruto: 15.40, ciclo: 30.00 },
+            "03INY0983": { nombre: "TAPA CAFÉ LIOFILIZADO 66MM TIPO F LOGO CAFÉ METALIZADO S'LINER", pesoNeto: 31.10, pesoBruto: 31.10, ciclo: 41.00 },
+            "03INY0984": { nombre: "BASE NEGRA JRT MODIFICADO", pesoNeto: 289.00, pesoBruto: 289.00, ciclo: 40.00 },
+            "03INY0985": { nombre: "CONTROL HUMEDAD TAPA CAJ.LEG", pesoNeto: 15.00, pesoBruto: 18.00, ciclo: 30.00 },
+            "03INY0986": { nombre: "TAPA CAFÉ LIOFILIZADO 77MM TIPO C LOGO ROJO 206 SIN LINER", pesoNeto: 27.10, pesoBruto: 30.70, ciclo: 27.00 },
+            "03INY0988": { nombre: "TAPA CAFÉ LIOFILIZADO 63MM TIPO A CON LOGO JUAN VALDEZ VERDE DESCAFEINADO SIN LINER", pesoNeto: 10.00, pesoBruto: 12.00, ciclo: 0 },
+            "03INY0989": { nombre: "TAPA C53 LGROJO BUENDIA S'ENS", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 25.00 },
+            "03INY0990": { nombre: "TAPA CAFÉ LIOFILIZADO  53MM TIPO C  LOGO AZUL VAINILLA ENG ESP", pesoNeto: 13.00, pesoBruto: 15.80, ciclo: 21.00 },
+            "03INY0994": { nombre: "TAPA CAFÉ LIOFILIZADO 53MM TIPO C CON LOGO VERDE SIN LINER", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 21.00 },
+            "03INY1000": { nombre: "PAD LATERAL PP NEGRO", pesoNeto: 2025.00, pesoBruto: 2035.00, ciclo: 100.00 },
+            "03INY1001": { nombre: "PAD CENTRAL PP NEGRO", pesoNeto: 2050.00, pesoBruto: 2060.00, ciclo: 100.00 },
+            "03INY1010": { nombre: "FILTRO CRISTAL BLUE INYECTADO", pesoNeto: 36.20, pesoBruto: 36.52, ciclo: 40.00 },
+            "03INY1011": { nombre: "FILTRO VERDE INYECTADO", pesoNeto: 36.20, pesoBruto: 36.52, ciclo: 40.00 },
+            "03INY1012": { nombre: "TAPA FILTRO CRISTAL BLUE INYECTADA", pesoNeto: 31.80, pesoBruto: 32.46, ciclo: 55.00 },
+            "03INY1013": { nombre: "TAPA FILTRO VERDE INYECTADA", pesoNeto: 31.80, pesoBruto: 32.46, ciclo: 55.00 },
+            "03INY1014": { nombre: "TAPA FILTRO CRISTAL BLUE TELA NYLON", pesoNeto: 32.40, pesoBruto: 33.06, ciclo: 50.00 },
+            "03INY1015": { nombre: "TAPA FILTRO VERDE TELA NYLON", pesoNeto: 32.40, pesoBruto: 33.06, ciclo: 50.00 },
+            "03INY1016": { nombre: "TAPA NEGRO-BLANCO JRT", pesoNeto: 0, pesoBruto: 0, ciclo: 0 },
+            "03INY1018": { nombre: "TAPA NEGRO-BLANCO HBT", pesoNeto: 0, pesoBruto: 0, ciclo: 0 },
+            "03INY1020": { nombre: "TAPA NEGRO-BLANCO SCOTT FOLD", pesoNeto: 0, pesoBruto: 0, ciclo: 0 },
+            "03INY1022": { nombre: "BOTON BLAN STX DISPENSADOR MOD", pesoNeto: 0.25, pesoBruto: 0.63, ciclo: 30.00 },
+            "03INY1023": { nombre: "BOTON NEGR STX DISPENSADOR MOD", pesoNeto: 0.20, pesoBruto: 0.20, ciclo: 30.00 },
+            "03INY1024": { nombre: "CONVERTOR BLAN STX DISPENS MOD", pesoNeto: 0.60, pesoBruto: 1.52, ciclo: 30.00 },
+            "03INY1025": { nombre: "CONVERTOR NEGR STX DISPENS MOD", pesoNeto: 0.60, pesoBruto: 0.60, ciclo: 15.00 },
+            "03INY1026": { nombre: "TAPA FLIP HUGGIES BLANCA LISA", pesoNeto: 12.00, pesoBruto: 12.00, ciclo: 13.60 },
+            "03INY1030": { nombre: "DAMPER REGU AIRE ANDRO MB GRIS", pesoNeto: 8.00, pesoBruto: 11.00, ciclo: 22.00 },
+            "03INY1031": { nombre: "TAPA FRONTAL JRT N/B", pesoNeto: 216.00, pesoBruto: 219.00, ciclo: 51.00 },
+            "03INY1032": { nombre: "TAPA LATERAL JRT", pesoNeto: 206.00, pesoBruto: 209.00, ciclo: 51.00 },
+            "03INY1033": { nombre: "TAPA FRONTAL HBT N/B", pesoNeto: 157.00, pesoBruto: 163.00, ciclo: 58.00 },
+            "03INY1034": { nombre: "TAPA LATERAL HBT", pesoNeto: 232.00, pesoBruto: 238.00, ciclo: 58.00 },
+            "03INY1035": { nombre: "TAPA FRONTAL SCOTT FOLD  N/B", pesoNeto: 254.00, pesoBruto: 260.00, ciclo: 50.00 },
+            "03INY1036": { nombre: "TAPA LATERAL SCOTT FOLD", pesoNeto: 216.00, pesoBruto: 222.00, ciclo: 50.00 },
+            "03INY1038": { nombre: "PUERTA ARMARIO WENGUE", pesoNeto: 565.00, pesoBruto: 570.00, ciclo: 68.00 },
+            "03INY1039": { nombre: "ENTREPAÑO ARMARIO WENGUE", pesoNeto: 645.00, pesoBruto: 650.00, ciclo: 54.00 },
+            "03INY1040": { nombre: "PISO ARMARIO WENGUE", pesoNeto: 730.00, pesoBruto: 733.00, ciclo: 67.00 },
+            "03INY1041": { nombre: "RETENEDOR MODULO ARMARIO WENGUE", pesoNeto: 3.50, pesoBruto: 4.75, ciclo: 30.00 },
+            "03INY1042": { nombre: "MODULO ARMARIO WENGUE", pesoNeto: 1005.00, pesoBruto: 1010.00, ciclo: 70.00 },
+            "03INY1043": { nombre: "PATAS MESA GRILL WENGUE", pesoNeto: 347.00, pesoBruto: 358.00, ciclo: 60.00 },
+            "03INY1044": { nombre: "TORNILLO NIVELADOR MESA WENGUE", pesoNeto: 12.50, pesoBruto: 12.50, ciclo: 40.00 },
+            "03INY1048": { nombre: "ABATIBLE BASURERO 25 LT VERDE", pesoNeto: 95.00, pesoBruto: 95.00, ciclo: 35.00 },
+            "03INY1049": { nombre: "BASE ABATIBLE BASURERO 25 LT VERDE", pesoNeto: 100.00, pesoBruto: 114.00, ciclo: 40.00 },
+            "03INY1051": { nombre: "ACTUADOR RENOVACION PRIMSATICO ML SIN HOT STAMPING", pesoNeto: 38.00, pesoBruto: 38.28, ciclo: 35.00 },
+            "03INY1055": { nombre: "TAPA FILTRO VERDE TELA NYLON NAC", pesoNeto: 32.40, pesoBruto: 33.06, ciclo: 50.00 },
+            "03INY1056": { nombre: "TAPA FILTRO CRISTAL BLUE TELA NYLON NAC", pesoNeto: 32.40, pesoBruto: 33.06, ciclo: 50.00 },
+            "03INY1060": { nombre: "MESA TOBAGO WENGUE SIN INSERTO", pesoNeto: 1734.00, pesoBruto: 1737.00, ciclo: 108.00 },
+            "03INY1061": { nombre: "INSERTO MESA TOBAGO WENGUE", pesoNeto: 821.00, pesoBruto: 821.00, ciclo: 76.00 },
+            "03INY1062": { nombre: "TAPA TOALLERO ESTANDAR EKOLOGICO", pesoNeto: 522.00, pesoBruto: 525.00, ciclo: 65.00 },
+            "03INY1063": { nombre: "BASE SOMBRILLA MESA RHONDA WENGUE", pesoNeto: 716.00, pesoBruto: 716.00, ciclo: 40.00 },
+            "03INY1064": { nombre: "PATAS MESA RHONDA WENGUE", pesoNeto: 674.00, pesoBruto: 690.00, ciclo: 100.00 },
+            "03INY1065": { nombre: "TAPON CENTRAL MESA WENGUE", pesoNeto: 16.00, pesoBruto: 16.50, ciclo: 46.00 },
+            "03INY1066": { nombre: "TAPA CAFE TIPO A 77MM MARISCAL DORADO SIN LOGO SIN LINER", pesoNeto: 13.00, pesoBruto: 13.00, ciclo: 18.00 },
+            "03INY1067": { nombre: "TAPA CAFÉ MARISCAL 77MM TIPO A SIN LOGO CAFÉ SIN LINER", pesoNeto: 13.00, pesoBruto: 13.50, ciclo: 18.00 },
+            "03INY1068": { nombre: "TAPA CAFÉ MARISCAL 77MM TIPO A SIN LOGO ROJO SIN LINER", pesoNeto: 13.00, pesoBruto: 13.50, ciclo: 18.00 },
+            "03INY1069": { nombre: "TAPA CAFÉ MARISCAL 77MM TIPO A SIN LOGO VERDE SIN LINER", pesoNeto: 13.00, pesoBruto: 13.00, ciclo: 18.00 },
+            "03INY1072": { nombre: "ASIENTO SANITARIO BASIC BLANCO X 3 UNIDADES", pesoNeto: 510.00, pesoBruto: 529.00, ciclo: 49.00 },
+            "03INY1074": { nombre: "CUBIERTA EVAPORADORA FRONTAL ANDROMEDA MOD GRIS 209", pesoNeto: 454.00, pesoBruto: 454.00, ciclo: 49.00 },
+            "03INY1075": { nombre: "DEFLECTOR CUB EVAPORADORA ANDROMEDA CON CINTA", pesoNeto: 240.00, pesoBruto: 242.00, ciclo: 40.00 },
+            "03INY1077": { nombre: "ACOPLE HEMBRA SIN ENSAMBLE", pesoNeto: 4.70, pesoBruto: 5.50, ciclo: 21.00 },
+            "03INY1079": { nombre: "PERILL CAJ CONTR ANDRO SIN IMP", pesoNeto: 6.50, pesoBruto: 7.50, ciclo: 18.00 },
+            "03INY1080": { nombre: "PERILLA PERSEUS SIN SCREEN", pesoNeto: 9.10, pesoBruto: 9.10, ciclo: 38.00 },
+            "03INY1081": { nombre: "ESTIBA LISA 8 SIN LABIO SIN TAPÓN PP PAD", pesoNeto: 9380.00, pesoBruto: 9426.00, ciclo: 145.00 },
+            "03INY1082": { nombre: "TAPON PLASTICO INSERTO METALICO ESTIBA DOBLE CARA", pesoNeto: 1.10, pesoBruto: 1.50, ciclo: 20.00 },
+            "03INY1093": { nombre: "CUBIERTA DISPENSADOR PRISMATICO SIN HOT STAMPING", pesoNeto: 34.00, pesoBruto: 34.90, ciclo: 30.00 },
+            "03INY1094": { nombre: "INSERTO SILLA IMPERIAL MIMBRE WENGUE", pesoNeto: 240.00, pesoBruto: 244.00, ciclo: 48.00 },
+            "03INY1095": { nombre: "SILLA IMPERIAL WENGUE", pesoNeto: 3800.00, pesoBruto: 3800.00, ciclo: 137.20 },
+            "03INY1104": { nombre: "LATERAL CORTO 18 MEZCLA D MOLDE #0 PRODUCTO EN PROCESO", pesoNeto: 180.00, pesoBruto: 180.00, ciclo: 35.00 },
+            "03INY1107": { nombre: "LATERAL LARGO 18 MEZCLA D MOLDE #0 PRODUCTO EN PROCESO", pesoNeto: 294.00, pesoBruto: 294.00, ciclo: 35.00 },
+            "03INY1108": { nombre: "TORNILLO NIVELADOR MESA GRIS GRANITO", pesoNeto: 12.50, pesoBruto: 12.50, ciclo: 40.00 },
+            "03INY1109": { nombre: "PATAS MESA GRILL GRIS GRANITO", pesoNeto: 347.00, pesoBruto: 368.00, ciclo: 60.00 },
+            "03INY1110": { nombre: "LATERAL ZAPATERO VARIOS COLORES BAZAR", pesoNeto: 152.00, pesoBruto: 155.50, ciclo: 57.00 },
+            "03INY1111": { nombre: "SOPORTE ORGANI VARIOS COLORES", pesoNeto: 47.00, pesoBruto: 48.00, ciclo: 38.00 },
+            "03INY1112": { nombre: "TAPON CENTRAL MESA GRILL GRIS GRANITO", pesoNeto: 16.00, pesoBruto: 16.50, ciclo: 46.00 },
+            "03INY1115": { nombre: "PERILLA CYCLE CAJA CONTROL INYECTADA SIN IMPRESION", pesoNeto: 6.11, pesoBruto: 7.31, ciclo: 20.00 },
+            "03INY1116": { nombre: "BANDEJA CARNES ANDROMEDA 290 LITROS SIN ENSAMBLAR", pesoNeto: 443.00, pesoBruto: 443.00, ciclo: 48.00 },
+            "03INY1117": { nombre: "PUERTA EVAPORADOR ANDROMEDA 290 LITROS SIN ENSAMBLAR", pesoNeto: 500.00, pesoBruto: 500.00, ciclo: 50.00 },
+            "03INY1118": { nombre: "PAD LATERAL PP VERDE", pesoNeto: 2025.00, pesoBruto: 2035.00, ciclo: 100.00 },
+            "03INY1119": { nombre: "PAD CENTRAL PP VERDE", pesoNeto: 2050.00, pesoBruto: 2060.00, ciclo: 100.00 },
+            "03INY1120": { nombre: "ESTIBA LISA 8 SIN LABIO SIN TAPÓN PP PAD VERDE", pesoNeto: 9380.00, pesoBruto: 9426.00, ciclo: 145.00 },
+            "03INY1121": { nombre: "TAPA CAFÉ LIOFILIZADO 77MM TIPO C LOGO ROJO CEREZA SIN LINER", pesoNeto: 27.10, pesoBruto: 30.70, ciclo: 27.00 },
+            "03INY1122": { nombre: "TAPA CAFÉ LIOFILIZADO 77MM TIPO C LOGO NEGRO SIN LINER", pesoNeto: 27.10, pesoBruto: 30.70, ciclo: 27.00 },
+            "03INY1123": { nombre: "TAPA TIPO C 53MM LOGO NEGRA SIN LINER", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 21.00 },
+            "03INY1124": { nombre: "TAPA TIPO C 53MM LOGO ROJO NAVI SIN ENSAMBLAR", pesoNeto: 12.50, pesoBruto: 15.30, ciclo: 21.00 },
+            "03INY1126": { nombre: "TAPA TIPO C 66MM LOGO NEGRA SIN ENSAMBLAR", pesoNeto: 20.70, pesoBruto: 27.70, ciclo: 29.00 },
+            "03INY1127": { nombre: "TAPA TIPO C 66MM LOGO VERDE SIN ENSAMBLAR", pesoNeto: 20.70, pesoBruto: 27.70, ciclo: 29.00 },
+            "03INY1128": { nombre: "TAPA TIPO C 66MM LOGO ROJO 206C SIN ENSAMBLAR", pesoNeto: 20.70, pesoBruto: 27.70, ciclo: 29.00 },
+            "03INY1129": { nombre: "TAPA TIPO C 66MM LOGO VERDE  METALIZADO SIN ENSAMBLAR", pesoNeto: 20.70, pesoBruto: 27.70, ciclo: 29.00 },
+            "03INY1130": { nombre: "TAPA TIPO C 66MM LOGO AZUL VAINILLA SIN ENSAMBLAR", pesoNeto: 20.70, pesoBruto: 27.70, ciclo: 29.00 },
+            "03INY1131": { nombre: "TAPA TIPO O 66MM SIN LOGO NEGRA SIN ENSAMBLAR", pesoNeto: 19.00, pesoBruto: 19.00, ciclo: 24.00 },
+            "03INY1132": { nombre: "TORRE DERECHA INYECTADA JUGA", pesoNeto: 26.00, pesoBruto: 33.00, ciclo: 75.00 },
+            "03INY1133": { nombre: "TORRE TRASERA INYECTADA JUGA", pesoNeto: 26.00, pesoBruto: 33.00, ciclo: 75.00 },
+            "03INY1134": { nombre: "TORRE IZQUIERDA INYECTADA JUGA", pesoNeto: 26.00, pesoBruto: 33.00, ciclo: 75.00 },
+            "03INY1135": { nombre: "ESTIBA PERFORADA 8 CON LABIO SIN TAPÓN PP NEGRA", pesoNeto: 9200.00, pesoBruto: 9246.00, ciclo: 145.00 },
+            "03INY1136": { nombre: "BASE CANASTILLA MEZCLA D M#0", pesoNeto: 1130.00, pesoBruto: 1130.00, ciclo: 50.00 },
+            "03INY1137": { nombre: "CAJON GRANDE AMARILLO + MANIJA AZUL", pesoNeto: 0, pesoBruto: 0, ciclo: 55.00 },
+            "03INY1138": { nombre: "CAJON GRANDE AZUL + MANIJA AZUL", pesoNeto: 0, pesoBruto: 0, ciclo: 55.00 },
+            "03INY1139": { nombre: "CAJON GRANDE FUCSIA + MANIJA MORADO ÁCIDO", pesoNeto: 0, pesoBruto: 0, ciclo: 55.00 },
+            "03INY1140": { nombre: "CAJÓN GRANDE GRIS HUMO + MANIJA NEGRA", pesoNeto: 0, pesoBruto: 0, ciclo: 55.00 },
+            "03INY1141": { nombre: "CAJÓN GRANDE ROJO + MANIJA AZUL", pesoNeto: 0, pesoBruto: 0, ciclo: 55.00 },
+            "03INY1142": { nombre: "CAJÓN GRANDE TRANSPARENTE + MANIJA AZUL", pesoNeto: 0, pesoBruto: 0, ciclo: 55.00 },
+            "03INY1143": { nombre: "CAJÓN GRANDE VERDE + MANIJA AZUL", pesoNeto: 0, pesoBruto: 0, ciclo: 55.00 },
+            "03INY1144": { nombre: "CAJÓN GRANDE VERDE ACIDO + MANIJA MORADO ÁCIDO", pesoNeto: 0, pesoBruto: 0, ciclo: 55.00 },
+            "03INY1145": { nombre: "CAJÓN GRANDE TRANSPARENTE + MANIJA NEGRA", pesoNeto: 0, pesoBruto: 0, ciclo: 55.00 },
+            "03INY1146": { nombre: "CAJÓN GRANDE TRANSPARENTE + MANIJA WENGUE", pesoNeto: 0, pesoBruto: 0, ciclo: 55.00 },
+            "03INY1147": { nombre: "CAJÓN GRANDE AZUL ACIDO", pesoNeto: 718.00, pesoBruto: 720.00, ciclo: 55.00 },
+            "03INY1148": { nombre: "CAJÓN GRANDE BEIGE", pesoNeto: 718.00, pesoBruto: 720.00, ciclo: 55.00 },
+            "03INY1149": { nombre: "CAJÓN GRANDE NARANJA ACIDO", pesoNeto: 718.00, pesoBruto: 720.00, ciclo: 55.00 },
+            "03INY1150": { nombre: "CAJÓN GRANDE TRANSPARENTE", pesoNeto: 718.00, pesoBruto: 720.00, ciclo: 55.00 },
+            "03INY1151": { nombre: "CAJON PEQUEÑO AMARILLO + MANIJA AZUL", pesoNeto: 0, pesoBruto: 0, ciclo: 46.00 },
+            "03INY1152": { nombre: "CAJON PEQUEÑO GRIS HUMO + MANIJA NEGRA", pesoNeto: 0, pesoBruto: 0, ciclo: 46.00 },
+            "03INY1153": { nombre: "CAJON PEQUEÑO ROJO + MANIJA AZUL", pesoNeto: 0, pesoBruto: 0, ciclo: 46.00 },
+            "03INY1154": { nombre: "CAJON PEQUEÑO TRANSPARENTE + MANIJA AZUL", pesoNeto: 0, pesoBruto: 0, ciclo: 46.00 },
+            "03INY1155": { nombre: "CAJON PEQUEÑO VERDE + MANIJA AZUL", pesoNeto: 0, pesoBruto: 0, ciclo: 46.00 },
+            "03INY1156": { nombre: "CAJON PEQUEÑO AMARILLO ACIDO", pesoNeto: 534.00, pesoBruto: 536.00, ciclo: 46.00 },
+            "03INY1157": { nombre: "CAJON PEQUEÑO BEIGE", pesoNeto: 534.00, pesoBruto: 536.00, ciclo: 46.00 },
+            "03INY1158": { nombre: "CAJON PEQUEÑO TRANSPARENTE", pesoNeto: 534.00, pesoBruto: 536.00, ciclo: 46.00 },
+            "03INY1159": { nombre: "CAJON PEQUEÑO VERDE ACIDO", pesoNeto: 536.00, pesoBruto: 538.00, ciclo: 46.00 },
+            "03INY1160": { nombre: "ESTRUCTURA ARCHIVADOR MOVIL NEGRO", pesoNeto: 256.00, pesoBruto: 282.00, ciclo: 48.00 },
+            "03INY1161": { nombre: "ESTRUCTURA GRANDE AZUL", pesoNeto: 440.00, pesoBruto: 474.00, ciclo: 48.00 },
+            "03INY1162": { nombre: "ESTRUCTURA GRANDE AZUL 5G ENSAMBLADAS", pesoNeto: 440.00, pesoBruto: 474.00, ciclo: 48.00 },
+            "03INY1163": { nombre: "ESTRUCTURA GRANDE MORADO ACIDO 5G ENSAMBLADAS", pesoNeto: 440.00, pesoBruto: 474.00, ciclo: 48.00 },
+            "03INY1164": { nombre: "ESTRUCTURA GRANDE NEGRA", pesoNeto: 440.00, pesoBruto: 474.00, ciclo: 48.00 },
+            "03INY1165": { nombre: "ESTRUCTURA GRANDE NEGRA 5G ENSAMBLADA", pesoNeto: 440.00, pesoBruto: 474.00, ciclo: 48.00 },
+            "03INY1166": { nombre: "ESTRUCTURA GRANDE VERDE ACIDO", pesoNeto: 440.00, pesoBruto: 474.00, ciclo: 48.00 },
+            "03INY1167": { nombre: "ESTRUCTURA GRANDE WENGUE", pesoNeto: 440.00, pesoBruto: 474.00, ciclo: 48.00 },
+            "03INY1168": { nombre: "ESTRUCTURA GRANDE WENGUE 5G ENSAMBLADAS", pesoNeto: 440.00, pesoBruto: 474.00, ciclo: 48.00 },
+            "03INY1169": { nombre: "ESTRUCTURA PEQUEÑA AZUL", pesoNeto: 385.00, pesoBruto: 419.00, ciclo: 40.00 },
+            "03INY1170": { nombre: "ESTRUCTURA PEQUEÑA NEGRA", pesoNeto: 385.00, pesoBruto: 419.00, ciclo: 40.00 },
+            "03INY1171": { nombre: "ESTRUCTURA PEQUEÑA VERDE ACIDO", pesoNeto: 440.00, pesoBruto: 474.00, ciclo: 40.00 },
+            "03INY1172": { nombre: "ESTRUCTURA PEQUEÑA WENGUE", pesoNeto: 385.00, pesoBruto: 419.00, ciclo: 40.00 },
+            "03INY1173": { nombre: "MANIJA CAJON AZUL", pesoNeto: 23.00, pesoBruto: 24.50, ciclo: 24.00 },
+            "03INY1174": { nombre: "MANIJA CAJON MORADO ACIDO", pesoNeto: 23.00, pesoBruto: 24.50, ciclo: 24.00 },
+            "03INY1175": { nombre: "MANIJA CAJON NEGRO", pesoNeto: 23.00, pesoBruto: 24.50, ciclo: 24.00 },
+            "03INY1176": { nombre: "MANIJA CAJON VERDE ACIDO", pesoNeto: 23.00, pesoBruto: 24.50, ciclo: 24.00 },
+            "03INY1177": { nombre: "MANIJA CAJON WENGUE", pesoNeto: 23.00, pesoBruto: 24.50, ciclo: 24.00 },
+            "03INY1178": { nombre: "SOPORTE CAJ.PLASCOL NEGR C 1-3", pesoNeto: 13.00, pesoBruto: 13.00, ciclo: 48.00 },
+            "03INY1179": { nombre: "SOPORTE CAJ.PLASCOL NEGR C 2-4", pesoNeto: 13.00, pesoBruto: 13.00, ciclo: 48.00 },
+            "03INY1180": { nombre: "TAPA ARCHIVADOR MOVIL NEGRO", pesoNeto: 159.00, pesoBruto: 160.00, ciclo: 48.00 },
+            "03INY1181": { nombre: "TAPA CAJON AZUL", pesoNeto: 418.00, pesoBruto: 418.00, ciclo: 43.00 },
+            "03INY1182": { nombre: "TAPA CAJON MORADO ACIDO", pesoNeto: 418.00, pesoBruto: 418.00, ciclo: 43.00 },
+            "03INY1183": { nombre: "TAPA CAJON NEGRO", pesoNeto: 418.00, pesoBruto: 418.00, ciclo: 43.00 },
+            "03INY1184": { nombre: "TAPA CAJON VERDE ACIDO", pesoNeto: 418.00, pesoBruto: 418.00, ciclo: 43.00 },
+            "03INY1185": { nombre: "TAPA CAJON WENGUE", pesoNeto: 418.00, pesoBruto: 418.00, ciclo: 43.00 },
+            "03INY1186": { nombre: "CAJON GRANDE AMARILLO", pesoNeto: 718.00, pesoBruto: 720.00, ciclo: 55.00 },
+            "03INY1187": { nombre: "CAJON GRANDE AZUL", pesoNeto: 718.00, pesoBruto: 720.00, ciclo: 55.00 },
+            "03INY1188": { nombre: "CAJÓN GRANDE FUCSIA ACIDO", pesoNeto: 718.00, pesoBruto: 720.00, ciclo: 55.00 },
+            "03INY1189": { nombre: "CAJÓN GRANDE ROJO", pesoNeto: 718.00, pesoBruto: 720.00, ciclo: 55.00 },
+            "03INY1191": { nombre: "CAJÓN GRANDE VERDE", pesoNeto: 718.00, pesoBruto: 720.00, ciclo: 55.00 },
+            "03INY1192": { nombre: "CAJON GRANDE VERDE ACIDO", pesoNeto: 718.00, pesoBruto: 720.00, ciclo: 55.00 },
+            "03INY1193": { nombre: "CAJON PEQUEÑO AMARILLO", pesoNeto: 534.00, pesoBruto: 536.00, ciclo: 46.00 },
+            "03INY1194": { nombre: "CAJON PEQUEÑO GRIS HUMO", pesoNeto: 534.00, pesoBruto: 536.00, ciclo: 46.00 },
+            "03INY1195": { nombre: "CAJON PEQUEÑO ROJO", pesoNeto: 534.00, pesoBruto: 536.00, ciclo: 46.00 },
+            "03INY1197": { nombre: "CAJON PEQUEÑO VERDE", pesoNeto: 534.00, pesoBruto: 536.00, ciclo: 46.00 },
+            "03INY1198": { nombre: "ESTRUCTURA GRANDE MORADO ACIDO", pesoNeto: 440.00, pesoBruto: 474.00, ciclo: 48.00 },
+            "03INY1199": { nombre: "TAPA CAFÉ LIOFILIZADO 77MM TIPO C LOGO ROJO CEREZA SIN LINER NUEVA", pesoNeto: 24.00, pesoBruto: 27.60, ciclo: 25.00 },
+            "03INY1200": { nombre: "TAPA TIPO C 77MM LOGO DORADO METALIZADO SIN ENSAMBLAR NUEVA", pesoNeto: 24.00, pesoBruto: 27.60, ciclo: 25.00 },
+            "03INY1201": { nombre: "TAPA CAFÉ LIOFILIZADO 77MM TIPO C LOGO ROJO 206 SIN LINER NUEVA", pesoNeto: 24.00, pesoBruto: 27.60, ciclo: 25.00 },
+            "03INY1202": { nombre: "TAPA TIPO C 77MM LOGO VERDE NAVIDEÑO SIN ENSAMBLAR NUEVA", pesoNeto: 24.00, pesoBruto: 27.60, ciclo: 25.00 },
+            "03INY1203": { nombre: "TAPA CAFÉ LIOFILIZADO 77MM TIPO C LOGO NEGRO SIN LINER NUEVA", pesoNeto: 24.00, pesoBruto: 27.60, ciclo: 25.00 },
+            "03INY1204": { nombre: "TAPA TIPO N 66MM CON LOGO NEGRA INYECTADA", pesoNeto: 13.00, pesoBruto: 13.00, ciclo: 21.00 },
+            "03INY1205": { nombre: "BASE MASCARA PROTECTOR FACIAL RIDUCO", pesoNeto: 18.70, pesoBruto: 18.70, ciclo: 20.00 },
+            "03INY1206": { nombre: "TAPA TIPO C 77MM CON LOGO MORADO SIN ENSAMBLAR", pesoNeto: 24.00, pesoBruto: 27.60, ciclo: 27.00 },
+            "03INY1207": { nombre: "TAPA TIPO C 66MM LOGO MORADO SIN ENSAMBLAR", pesoNeto: 20.70, pesoBruto: 27.70, ciclo: 29.00 },
+            "03INY1208": { nombre: "TAPA C53 LG MORADO BUENDIA S'ENS", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 24.00 },
+            "03INY1209": { nombre: "FILTRO GRIS INYECTADO QUASAR", pesoNeto: 36.20, pesoBruto: 36.52, ciclo: 40.00 },
+            "03INY1210": { nombre: "TAPA FILTRO GRIS TELA NYLON NAC QUASAR", pesoNeto: 32.40, pesoBruto: 33.06, ciclo: 50.00 },
+            "03INY1214": { nombre: "REMATE JALADERA POKET FF ANDROMEDA  NEGRO P007 INYECTADO", pesoNeto: 214.00, pesoBruto: 218.00, ciclo: 55.00 },
+            "03INY1215": { nombre: "TAPA TIPO C 53MM LOGO VERDE 41963  SIN LINER", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 25.00 },
+            "03INY1216": { nombre: "TAPA TIPO C 53MM LOGO CHOCOLATE 4193-2  SIN LINER", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 25.00 },
+            "03INY1217": { nombre: "TAPA TIPO C 53MM LOGO MOSTAZA METALIZADO 41959  SIN LINER", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 25.00 },
+            "03INY1218": { nombre: "TAPA TIPO C 53MM LOGO CREMA  41970-2  SIN LINER", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 25.00 },
+            "03INY1219": { nombre: "TAPA TIPO C 53MM LOGO VERDE METALIZADO 41955  SIN LINER", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 25.00 },
+            "03INY1220": { nombre: "TAPA TIPO C 53MM LOGO CAFE CARMELO  41957-2  SIN LINER", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 25.00 },
+            "03INY1221": { nombre: "TAPA CAFÉ LIOFILIZADO 66MM TIPO F LOGO VERDE 40911 S'LINER", pesoNeto: 31.10, pesoBruto: 31.10, ciclo: 26.00 },
+            "03INY1222": { nombre: "TAPA  TIPO F 53MM VERDE 40911  SIN LINER", pesoNeto: 15.40, pesoBruto: 15.40, ciclo: 30.00 },
+            "03INY1224": { nombre: "ABATIBLE GRANDE NEGRO PP", pesoNeto: 152.00, pesoBruto: 152.00, ciclo: 40.00 },
+            "03INY1225": { nombre: "ABATIBLE PEQUEÑO NEGRO MB", pesoNeto: 100.00, pesoBruto: 100.00, ciclo: 32.00 },
+            "03INY1226": { nombre: "ESTUCHE JABON TRANSP 40G", pesoNeto: 8.60, pesoBruto: 9.00, ciclo: 38.00 },
+            "03INY1227": { nombre: "ASIENTO SANITARIO BASIC BONE X 3 UNIDADES", pesoNeto: 510.00, pesoBruto: 529.00, ciclo: 46.00 },
+            "03INY1233": { nombre: "CAJA  HERRAMIENTAS CENTRAL ECODELUX HERO", pesoNeto: 218.00, pesoBruto: 221.00, ciclo: 90.00 },
+            "03INY1235": { nombre: "TAPA CAJA  HERRAMIENTAS IZQUIERDA ECODELUX HERO", pesoNeto: 50.00, pesoBruto: 53.00, ciclo: 57.00 },
+            "03INY1236": { nombre: "PORTASEGUROS CAJA HERRAMIENTAS ECODELUX", pesoNeto: 10.00, pesoBruto: 12.00, ciclo: 35.00 },
+            "03INY1237": { nombre: "PROTECTOR AGUA GUARDAFANGO TRASERO ECODELUX ECO 100", pesoNeto: 27.00, pesoBruto: 30.00, ciclo: 30.00 },
+            "03INY1238": { nombre: "CAJA  HERRAMIENTAS CENTRAL ECO100 HERO", pesoNeto: 190.00, pesoBruto: 195.00, ciclo: 90.00 },
+            "03INY1240": { nombre: "TAPA IZQUIERDA CAJA  HERRAMIENTAS ECO100 HERO", pesoNeto: 48.00, pesoBruto: 58.00, ciclo: 57.00 },
+            "03INY1242": { nombre: "PORTASEGUROS CAJA HERRAMIENTAS ECO100", pesoNeto: 8.00, pesoBruto: 10.00, ciclo: 35.00 },
+            "03INY1243": { nombre: "TAPA A 63 SIN LOGO VERDE CLARO SIN LINER", pesoNeto: 10.10, pesoBruto: 10.10, ciclo: 16.00 },
+            "03INY1244": { nombre: "TAPA TIPO C 53MM LOGO ROJO IRLA S'LINER", pesoNeto: 13.00, pesoBruto: 13.00, ciclo: 25.00 },
+            "03INY1245": { nombre: "TAPA TIPO A 63MM CON LOGO DORADO MET S'L", pesoNeto: 12.20, pesoBruto: 12.20, ciclo: 16.00 },
+            "03INY1246": { nombre: "TAPA TIPO A 63MM CON LOGO JV DORADO OCRE", pesoNeto: 10.00, pesoBruto: 12.00, ciclo: 16.00 },
+            "03INY1247": { nombre: "TAPA TIPO A 63MM SIN LOGO NEGRO S'L", pesoNeto: 10.00, pesoBruto: 12.00, ciclo: 16.00 },
+            "03INY1249": { nombre: "TAPA TIPO A 70MM CON LOGO CAFE SIN LINER", pesoNeto: 13.00, pesoBruto: 13.00, ciclo: 16.00 },
+            "03INY1250": { nombre: "TAPA TIPO A 70MM CON LOGO DORADO MET SIN LINER", pesoNeto: 13.00, pesoBruto: 13.00, ciclo: 16.00 },
+            "03INY1251": { nombre: "TAPA TIPO A 70MM CON LOGO VERDE ORGANICO SIN LINER", pesoNeto: 13.00, pesoBruto: 13.00, ciclo: 16.00 },
+            "03INY1252": { nombre: "TAPA TIPO A 70MM CON LOGO NEGRO SIN LINER", pesoNeto: 13.00, pesoBruto: 13.00, ciclo: 16.00 },
+            "03INY1253": { nombre: "TAPA TIPO F 53MM VERDE-40911 SIN LINER", pesoNeto: 16.00, pesoBruto: 16.00, ciclo: 30.00 },
+            "03INY1254": { nombre: "TAPA TIPO D 63MM TIM HORTONS CON LOGO", pesoNeto: 14.60, pesoBruto: 14.60, ciclo: 27.00 },
+            "03INY1255": { nombre: "TAPA TIPO N 77MM CON LOGO SIN LINER", pesoNeto: 24.50, pesoBruto: 24.50, ciclo: 27.00 },
+            "03INY1262": { nombre: "TAPA TIPO F 53MM VERDE OLIVA METALIZADO SIN LINER", pesoNeto: 16.00, pesoBruto: 16.00, ciclo: 30.00 },
+            "03INY1267": { nombre: "FILTRO GRIS CHAGALL INYECTADO HWI", pesoNeto: 36.20, pesoBruto: 36.52, ciclo: 40.00 },
+            "03INY1268": { nombre: "TAPA FILTRO GRIS CHAGALL TELA NYLON NAC", pesoNeto: 32.40, pesoBruto: 33.06, ciclo: 50.00 },
+            "03INY1269": { nombre: "TAPA TIPO M MIMBRE 66 CON LOGO JUAN VALDÉZ DORADO OCRE SIN LINER", pesoNeto: 16.00, pesoBruto: 16.00, ciclo: 28.00 },
+            "03INY1270": { nombre: "TAPA TIPO M MIMBRE 66 CON LOGO JUAN VALDÉZ VAINILLA CANELA SIN LINER", pesoNeto: 16.00, pesoBruto: 16.00, ciclo: 28.00 },
+            "03INY1271": { nombre: "TAPA TIPO M MIMBRE 66 CON LOGO JUAN VALDÉZ VERDE DESCAF SIN LINER", pesoNeto: 16.00, pesoBruto: 16.00, ciclo: 28.00 },
+            "03INY1272": { nombre: "TAPA TIPO M MIMBRE 66 CON LOGO JUAN VALDÉZ NARANJA SIN LINER", pesoNeto: 16.00, pesoBruto: 16.00, ciclo: 28.00 },
+            "03INY1273": { nombre: "TAPA TIPO C 66MM LOGO VERDE ORGÁNICA SIN LINER", pesoNeto: 20.70, pesoBruto: 27.70, ciclo: 29.00 },
+            "03INY1274": { nombre: "TAPA TIPO D 63MM SIN LOGO NEGRA TIM HORTONS SIN LINER", pesoNeto: 14.60, pesoBruto: 14.60, ciclo: 27.00 },
+            "03INY1275": { nombre: "TAPA TIPO O 66MM VERDE SIN LINER", pesoNeto: 19.00, pesoBruto: 19.00, ciclo: 24.00 },
+            "03INY1276": { nombre: "TAPA TIPO M MIMBRE 66 CON LOGO JUAN VALDÉZ CHOCOLATE", pesoNeto: 16.00, pesoBruto: 16.00, ciclo: 28.00 },
+            "03INY1277": { nombre: "TAPA TIPO M MIMBRE 77 CON LOGO JUAN VALDÉZ NARANJA SIN LINER", pesoNeto: 20.00, pesoBruto: 20.00, ciclo: 28.00 },
+            "03INY1278": { nombre: "TAPA TIPO M MIMBRE 77 CON LOGO JUAN VALDÉZ VERDE DESCAF SIN LINER", pesoNeto: 20.00, pesoBruto: 20.00, ciclo: 28.00 },
+            "03INY1279": { nombre: "TAPA TIPO C 53MM CON LOGO BIO SIN LINER", pesoNeto: 17.50, pesoBruto: 20.30, ciclo: 21.00 },
+            "03INY1282": { nombre: "TAPA TIPO F 53MM LOGO CAFE METALIZADO", pesoNeto: 15.40, pesoBruto: 15.40, ciclo: 30.00 },
+            "03INY1283": { nombre: "TAPA CAFÉ LIOFILIZADO 63MM TIPO A CON LOGO NEGRO IND ESP", pesoNeto: 10.00, pesoBruto: 12.00, ciclo: 16.00 },
+            "03INY1284": { nombre: "TAPA TIPO C 53MM CON LOGO BIO SIN LINER", pesoNeto: 17.50, pesoBruto: 20.30, ciclo: 21.00 },
+            "03INY1286": { nombre: "TAPA C 53MM ROJO LG DE ENSAYO", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 25.00 },
+            "03INY1287": { nombre: "TAPA NECAFE 85G-100G DORADO SIN LINER", pesoNeto: 6.70, pesoBruto: 6.70, ciclo: 13.00 },
+            "03INY1288": { nombre: "TAPA NECAFE 85G-100G PARDO SIN LINER", pesoNeto: 6.70, pesoBruto: 6.70, ciclo: 13.00 },
+            "03INY1289": { nombre: "TAPA NECAFE 85G-100G ROJO SIN LINER", pesoNeto: 6.70, pesoBruto: 6.70, ciclo: 13.00 },
+            "03INY1290": { nombre: "TAPA NECAFE 85G-100G VERDE SIN LINER", pesoNeto: 6.70, pesoBruto: 6.70, ciclo: 13.00 },
+            "03INY1291": { nombre: "TAPA TIPO M MIMBRE 77 CON LOGO JUAN VALDÉZ DORADO OCRE SIN LINER", pesoNeto: 20.00, pesoBruto: 20.00, ciclo: 28.00 },
+            "03INY1292": { nombre: "TAPA CAFÉ MARISCAL 63MM TIPO A SIN LOGO CAFÉ", pesoNeto: 10.50, pesoBruto: 10.80, ciclo: 15.00 },
+            "03INY1293": { nombre: "TAPA CAFÉ MARISCAL 63MM TIPO A SIN LOGO ROJO", pesoNeto: 10.50, pesoBruto: 11.00, ciclo: 15.00 },
+            "03INY1294": { nombre: "TAPA CAFÉ MARISCAL 63MM TIPO A SIN LOGO NEGRA", pesoNeto: 10.50, pesoBruto: 11.00, ciclo: 15.00 },
+            "03INY1295": { nombre: "TAPA A 63MM  MARISCAL DORADO VIEJO MOLINO", pesoNeto: 8.45, pesoBruto: 10.37, ciclo: 15.00 },
+            "03INY1296": { nombre: "TAPA A63 MARISCAL ROJO VIEJO MOLINO", pesoNeto: 8.45, pesoBruto: 10.37, ciclo: 15.00 },
+            "03INY1298": { nombre: "TAPA CAFÉ MARISCAL 53MM TIPO A SIN LOGO CAFÉ", pesoNeto: 6.00, pesoBruto: 6.50, ciclo: 16.00 },
+            "03INY1299": { nombre: "TAPA CAFÉ MARISCAL 53MM TIPO A SIN LOGO DORADO", pesoNeto: 6.00, pesoBruto: 6.50, ciclo: 16.00 },
+            "03INY1300": { nombre: "TAPA A 63MM  MARISCAL DORADO", pesoNeto: 8.45, pesoBruto: 10.37, ciclo: 15.00 },
+            "03INY1301": { nombre: "TAPA CAFÉ MARISCAL 63MM TIPO A VIEJO MOLINO SIN LOGO ROJO", pesoNeto: 8.45, pesoBruto: 10.37, ciclo: 15.00 },
+            "03INY1302": { nombre: "TAPA CAFÉ MARISCAL 63MM TIPO A SIN LOGO CAFÉ", pesoNeto: 10.50, pesoBruto: 10.80, ciclo: 15.00 },
+            "03INY1303": { nombre: "TAPA CAFÉ MARISCAL 63MM TIPO A SIN LOGO ROJO", pesoNeto: 10.50, pesoBruto: 11.00, ciclo: 15.00 },
+            "03INY1304": { nombre: "TAPA CAFÉ MARISCAL 63MM TIPO A SIN LOGO NEGRA", pesoNeto: 10.50, pesoBruto: 11.00, ciclo: 15.00 },
+            "03INY1305": { nombre: "TAPA A63 MARISCAL VERDE VIEJO MOLINO SIN LOGO", pesoNeto: 8.45, pesoBruto: 10.37, ciclo: 15.00 },
+            "03INY1306": { nombre: "TAPA CAFÉ MARISCAL 63MM TIPO A VIEJO MOLINO SIN LOGO DORADO", pesoNeto: 8.45, pesoBruto: 10.37, ciclo: 15.00 },
+            "03INY1307": { nombre: "TAPA MARISCAL TIPO A 63MM DORADO SIN LOGO SIN ENSAMBLAR", pesoNeto: 10.50, pesoBruto: 11.00, ciclo: 15.00 },
+            "03INY1308": { nombre: "TAPA CAFÉ LIOFILIZADO 66MM TIPO F LOGO CAFÉ METALIZADO S'LINER", pesoNeto: 31.10, pesoBruto: 31.10, ciclo: 26.00 },
+            "03INY1309": { nombre: "TAPA TIPO A 70MM CON LOGO ROJO SIN LINER", pesoNeto: 13.00, pesoBruto: 13.00, ciclo: 16.00 },
+            "03INY1311": { nombre: "TAPA TIPO C 53MM LOGO AZUL VAINILLA S'LINER", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 21.00 },
+            "03INY1315": { nombre: "TAPA CAFÉ MARISCAL 53MM TIPO A SIN LOGO ROJO CEREZA SIN LINER", pesoNeto: 6.00, pesoBruto: 6.50, ciclo: 16.00 },
+            "03INY1316": { nombre: "TAPA CAFÉ MARISCAL 63MM TIPO A SIN LOGO ROJO CEREZA SIN LINER", pesoNeto: 10.50, pesoBruto: 11.00, ciclo: 15.00 },
+            "03INY1317": { nombre: "TAPA CAFÉ MARISCAL 77MM TIPO A SIN LOGO ROJO CEREZA SIN LINER", pesoNeto: 13.00, pesoBruto: 13.50, ciclo: 18.00 },
+            "03INY1318": { nombre: "TAPA TIPO M MIMBRE 66 CON LOGO JUAN VALDÉZ VERDE METALIZADO SIN LINER", pesoNeto: 16.00, pesoBruto: 16.00, ciclo: 28.00 },
+            "03INY1319": { nombre: "TAPA CAFÉ MARISCAL 63MM TIPO A VIEJO MOLINO SIN LOGO NEGRA", pesoNeto: 8.45, pesoBruto: 10.37, ciclo: 15.00 },
+            "03INY1320": { nombre: "TAPA 63MM VIEJO MOLINO PREMIUM DORADO", pesoNeto: 10.50, pesoBruto: 11.00, ciclo: 16.00 },
+            "03INY1321": { nombre: "TAPA CAFÉ MARISCAL 53MM TIPO A SIN LOGO NEGRA S' LINER", pesoNeto: 6.00, pesoBruto: 6.50, ciclo: 16.00 },
+            "03INY1322": { nombre: "TAPA 63MM VIEJO MOLINO PREMIUM DORADO-33757", pesoNeto: 10.50, pesoBruto: 11.00, ciclo: 16.00 },
+            "03INY1323": { nombre: "TAPA FLIP-TOP 27MM NEGRO EN PROCESO", pesoNeto: 3.20, pesoBruto: 3.20, ciclo: 15.00 },
+            "03INY1324": { nombre: "TAPA FLIP-TOP 33MM NEGRO EN PROCESO", pesoNeto: 4.70, pesoBruto: 4.70, ciclo: 16.00 },
+            "03INY1325": { nombre: "TAPA FLIP-TOP 27MM BLANCO EN PROCESO", pesoNeto: 3.20, pesoBruto: 3.20, ciclo: 15.00 },
+            "03INY1327": { nombre: "TAPA FLIP-TOP 33MM BLANCO PROCESO", pesoNeto: 4.80, pesoBruto: 5.45, ciclo: 16.00 },
+            "03INY1332": { nombre: "TAPA TIPO A 53MM 53MM SIN ENSAMBLAR", pesoNeto: 6.00, pesoBruto: 6.50, ciclo: 16.00 },
+            "03INY1333": { nombre: "TAPA TIPO M 66 LG JV AZUL VAINILLA SIN LINER", pesoNeto: 16.00, pesoBruto: 16.00, ciclo: 28.00 },
+            "03INY1334": { nombre: "TAPA TIPO D 63MM DORADA TIM HORTONS CON LOGO", pesoNeto: 14.60, pesoBruto: 14.60, ciclo: 27.00 },
+            "03INY1335": { nombre: "CAJON GRANDE VARIOS COLORES", pesoNeto: 718.00, pesoBruto: 720.00, ciclo: 55.00 },
+            "03INY1336": { nombre: "TAPA TIPO A 77MM SIN LOGO SECCCO ROJO", pesoNeto: 10.50, pesoBruto: 11.00, ciclo: 15.00 },
+            "03INY1337": { nombre: "TAPA DOMO DIAMETRO 32MM BLANCA RIDUCO EN PROCESO", pesoNeto: 2.80, pesoBruto: 2.80, ciclo: 15.00 },
+            "03INY1338": { nombre: "CAP DOMO DIAETRO 32MM FUCSIA REXONA WOMAN EN PROCESO", pesoNeto: 2.80, pesoBruto: 2.80, ciclo: 15.00 },
+            "03INY1339": { nombre: "CAP DOMO DIAMETRO  32MM MORADO PERLADOEN PROCESO", pesoNeto: 2.80, pesoBruto: 2.80, ciclo: 15.00 },
+            "03INY1340": { nombre: "CAP DOMO DIAMETRO 32MM AZUL PERLADO EN PROCESO", pesoNeto: 2.80, pesoBruto: 2.80, ciclo: 15.00 },
+            "03INY1341": { nombre: "CAP DOMO DIAMETROMM 32 NEGRO REXONA MAN EN PROCESO", pesoNeto: 2.80, pesoBruto: 2.80, ciclo: 15.00 },
+            "03INY1343": { nombre: "TAPA FLIP HUGGIES BLANCA LISA MENOR PESO", pesoNeto: 10.00, pesoBruto: 10.00, ciclo: 10.00 },
+            "03INY1344": { nombre: "TAPA CAFÉ LIOFILIZADO 77MM TIPO C LOGOAZUL CLARO SIN LINER", pesoNeto: 24.00, pesoBruto: 27.60, ciclo: 25.00 },
+            "03INY1345": { nombre: "TAPA DOMO DIAMETRO 32MM BLANCA RIDUCO EN PROCESO", pesoNeto: 2.80, pesoBruto: 2.80, ciclo: 15.00 },
+            "03INY1346": { nombre: "CAP DOMO DIAETRO 32MM FUCSIA REXONA WOMAN EN PROCESO", pesoNeto: 2.80, pesoBruto: 2.80, ciclo: 15.00 },
+            "03INY1347": { nombre: "CAP DOMO DIAMETRO  32MM MORADO PERLADOEN PROCESO", pesoNeto: 2.80, pesoBruto: 2.80, ciclo: 15.00 },
+            "03INY1348": { nombre: "CAP DOMO DIAMETRO 32MM AZUL PERLADO EN PROCESO", pesoNeto: 2.80, pesoBruto: 2.80, ciclo: 15.00 },
+            "03INY1349": { nombre: "CAP DOMO DIAMETROMM 32 NEGRO REXONA MAN EN PROCESO", pesoNeto: 2.80, pesoBruto: 2.80, ciclo: 15.00 },
+            "03INY1351": { nombre: "TAPA A63 MARISCAL VERDE VIEJO MOLINO SIN LINER", pesoNeto: 8.45, pesoBruto: 10.37, ciclo: 15.00 },
+            "03INY1352": { nombre: "TAPA A63 MARISCAL ROJO VIEJO MOLINO SIN LINER", pesoNeto: 8.45, pesoBruto: 10.37, ciclo: 15.00 },
+            "03INY1353": { nombre: "TAPA TIPO N 77MM LOGO AGUAMAR SIN LINER", pesoNeto: 24.50, pesoBruto: 24.50, ciclo: 27.00 },
+            "03INY1354": { nombre: "TAPA C1 LOGO 53MM ROJO BUEN DIA S'LINER ELASTIC", pesoNeto: 9.80, pesoBruto: 9.80, ciclo: 21.00 },
+            "03INY1355": { nombre: "TAPA TIPO C1 53MM LOGO VERDE DESCAFEINADO SIN LINER ELASTIC", pesoNeto: 9.80, pesoBruto: 9.80, ciclo: 21.00 },
+            "03INY1356": { nombre: "TAPA C1 LOGO 53MM AZUL VAINILLA S'LINER ELASTIC", pesoNeto: 9.80, pesoBruto: 9.80, ciclo: 21.00 },
+            "03INY1357": { nombre: "TAPA C1 LOGO 53MM NARANJA AMARETTO S'LINER ELASTIC", pesoNeto: 9.80, pesoBruto: 9.80, ciclo: 21.00 },
+            "03INY1358": { nombre: "TAPA C1 LOGO 53MM VIOLETA (PURPRA) S'LINER ELASTIC", pesoNeto: 9.80, pesoBruto: 9.80, ciclo: 21.00 },
+            "03INY1359": { nombre: "TAPA C1 LOGO 53MM CAFE DORADO S'LINER ELASTIC", pesoNeto: 9.80, pesoBruto: 9.80, ciclo: 21.00 },
+            "03INY1360": { nombre: "TAPA TIPO C1 53MM LOGO NEGRA SIN LINER ELASTIC", pesoNeto: 9.80, pesoBruto: 9.80, ciclo: 21.00 },
+            "03INY1361": { nombre: "TAPA TIPO M MIMBRE 66 CON LOGO JUAN VALDÉZ LILA", pesoNeto: 16.00, pesoBruto: 16.00, ciclo: 21.00 },
+            "03INY1362": { nombre: "TAPA PERILLA BOTERO", pesoNeto: 6.00, pesoBruto: 6.50, ciclo: 30.00 },
+            "03INY1363": { nombre: "TAPA FILTRO BOTERO", pesoNeto: 38.00, pesoBruto: 38.00, ciclo: 40.00 },
+            "03INY1364": { nombre: "BASE PERILLA BOTERO", pesoNeto: 15.00, pesoBruto: 15.00, ciclo: 40.00 },
+            "03INY1365": { nombre: "BASE FILTRO BOTERO", pesoNeto: 65.00, pesoBruto: 65.00, ciclo: 40.00 },
+            "03INY1366": { nombre: "TAPA FLIP-TOP 27MM AZUL EN PROCESO", pesoNeto: 3.20, pesoBruto: 3.20, ciclo: 15.00 },
+            "03INY1367": { nombre: "TAPA FLIP-TOP 27MM FUCSIA EN PROCESO", pesoNeto: 3.20, pesoBruto: 3.20, ciclo: 15.00 },
+            "03INY1368": { nombre: "TAPA FLIP-TOP 27MM ROJO CANELA EN PROCESO", pesoNeto: 3.20, pesoBruto: 3.20, ciclo: 12.00 },
+            "03INY1369": { nombre: "TAPA FLIP-TOP 27MM VERDE LIMON EN PROCESO", pesoNeto: 3.20, pesoBruto: 3.20, ciclo: 12.00 },
+            "03INY1370": { nombre: "TAPA FLIP-TOP 27MM ARICA EN PROCESO", pesoNeto: 3.20, pesoBruto: 3.20, ciclo: 12.00 },
+            "03INY1371": { nombre: "TAPA TIPO O 66MM CON LOGO NEGRA SIN ENSAMBLAR", pesoNeto: 19.00, pesoBruto: 19.00, ciclo: 24.00 },
+            "03INY1372": { nombre: "TAPA TIPO O 53 MM CON LOGO NEGRA SIN ENSAMBLAR", pesoNeto: 10.00, pesoBruto: 10.00, ciclo: 24.00 },
+            "03INY1373": { nombre: "TAPA FLIP-TOP 27MM AZUL EN PROCESO DIRECTO", pesoNeto: 3.20, pesoBruto: 3.20, ciclo: 15.00 },
+            "03INY1378": { nombre: "TAPA TIPO O 66MM VERDE CLARO SIN LOGO", pesoNeto: 19.00, pesoBruto: 19.00, ciclo: 24.00 },
+            "03INY1379": { nombre: "TAPA TIPO O 66MM ROJO IRLANDES SIN LOGO", pesoNeto: 19.00, pesoBruto: 19.00, ciclo: 24.00 },
+            "03INY1380": { nombre: "TAPA TIPO A 63 MM SIN LOGO CEFE METALIZADO SIN LINER", pesoNeto: 10.10, pesoBruto: 10.10, ciclo: 16.00 },
+            "03INY1381": { nombre: "TAPA TIPO C TASOGARE 53 MM AZUL SIN LINER", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 24.00 },
+            "03INY1382": { nombre: "TAPA TIPO F 53MM LOGO BEIGE (VAINICA)", pesoNeto: 15.40, pesoBruto: 15.40, ciclo: 30.00 },
+            "03INY1383": { nombre: "TAPA TIPO C 53 MM ONDAS SIN LINER ROJO BUENDIA", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 24.00 },
+            "03INY1385": { nombre: "TAPA TIPO C 53 MM VERDE METALIZADO ONDAS SIN LINER", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 24.00 },
+            "03INY1386": { nombre: "TAPA TIPO C 53 MM ONDAS AZUL VAINILLA SIN LINER", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 24.00 },
+            "03INY1387": { nombre: "TAPA TIPO C 53 MM ONDAS NARANJA AMARETTO SIN LINER", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 24.00 },
+            "03INY1388": { nombre: "TAPA TIPO C 53 MM ONDAS PURPURA SIN LINER", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 24.00 },
+            "03INY1389": { nombre: "TAPA TIPO C 53 MM ONDAS CARAMELO (CHOCOLATE) SIN LINER", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 24.00 },
+            "03INY1390": { nombre: "TAPA TIPO C 53 MM ONDAS NEGRO SIN LINER", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 24.00 },
+            "03INY1391": { nombre: "TAPA TIPO C 66MM LOGO ONDAS VERDE METALIZADO BUEN DIA SIN LINER", pesoNeto: 20.70, pesoBruto: 27.70, ciclo: 29.00 },
+            "03INY1392": { nombre: "TAPA TIPO C 66MM LOGO ROJO BUEN DIA SIN LINER", pesoNeto: 20.70, pesoBruto: 27.70, ciclo: 29.00 },
+            "03INY1393": { nombre: "TAPA TIPO C 66MM LOGO ONDAS NEGRO BUEN DIA SIN LINER", pesoNeto: 20.70, pesoBruto: 27.70, ciclo: 29.00 },
+            "03INY1394": { nombre: "TAPA TIPO C 66MM LOGO AZUL VAINILLA SIN LINER", pesoNeto: 20.70, pesoBruto: 27.70, ciclo: 29.00 },
+            "03INY1395": { nombre: "TAPA TIPO C 77 MM LOGO ROJO BUEN DIA SIN LINER", pesoNeto: 23.70, pesoBruto: 30.70, ciclo: 29.00 },
+            "03INY1396": { nombre: "TAPA TIPO C 77 MM LOGO NEGRO BUEN DIA SIN LINER", pesoNeto: 23.70, pesoBruto: 30.70, ciclo: 29.00 },
+            "03INY1398": { nombre: "TAPA MARISCAL TIPO A 63MM ROJO SIN LOGO", pesoNeto: 10.50, pesoBruto: 11.00, ciclo: 15.00 },
+            "03INY1399": { nombre: "TAPA CAFE TIPO A 77MM MARISCAL ROJO SIN LOGO SIN LINER", pesoNeto: 13.00, pesoBruto: 13.00, ciclo: 18.00 },
+            "03INY1400": { nombre: "TAPA FRONTAL DISPENSADOR ESPUMA (FOAM)", pesoNeto: 58.00, pesoBruto: 58.00, ciclo: 60.00 },
+            "03INY1401": { nombre: "TAPA LATERAL DISPENSADOR ESPUMA (FOAM)", pesoNeto: 88.00, pesoBruto: 88.00, ciclo: 60.00 },
+            "03INY1402": { nombre: "VENTANA DISPENSADOR ESPUMA-FOAM", pesoNeto: 6.00, pesoBruto: 8.40, ciclo: 25.00 },
+            "03INY1403": { nombre: "BASE DISPENSADOR DE ESPUMA-FOAM", pesoNeto: 140.00, pesoBruto: 140.00, ciclo: 40.00 },
+            "03INY1404": { nombre: "RESORTE DISPENSADOR ESPUMA-FOAM", pesoNeto: 33.10, pesoBruto: 33.10, ciclo: 45.00 },
+            "03INY1405": { nombre: "SEGURO DISPENSADOR ESPUMA-FOAM", pesoNeto: 2.00, pesoBruto: 3.00, ciclo: 20.00 },
+            "03INY1406": { nombre: "CLIP ESPUMA 800 ML DISPENSADOR DE JABON", pesoNeto: 5.00, pesoBruto: 6.00, ciclo: 15.00 },
+            "03INY1407": { nombre: "LLAVE PLASTICA DISPENSADORES DE JABON", pesoNeto: 2.00, pesoBruto: 3.00, ciclo: 15.00 },
+            "03INY1409": { nombre: "TAPA FRONTAL DISPENSADOR DE JABON SPRAY 400 ML", pesoNeto: 33.00, pesoBruto: 33.00, ciclo: 60.00 },
+            "03INY1410": { nombre: "TAPA LATERAL DISPENSADOR DE SPRAY 400 ML", pesoNeto: 72.00, pesoBruto: 72.00, ciclo: 60.00 },
+            "03INY1411": { nombre: "VENTANA DISPENSADOR SPRAY 400 ML", pesoNeto: 2.50, pesoBruto: 3.50, ciclo: 25.00 },
+            "03INY1412": { nombre: "BASE DISPENSADOR SPRAY 400 ML", pesoNeto: 93.00, pesoBruto: 93.00, ciclo: 40.00 },
+            "03INY1413": { nombre: "RESORTE DISPENSADORES SPRAY 400 ML", pesoNeto: 28.00, pesoBruto: 28.00, ciclo: 45.00 },
+            "03INY1414": { nombre: "TAPA FRONTAL DISPENSADOR SPRAY 800-1000 ML", pesoNeto: 49.50, pesoBruto: 49.50, ciclo: 60.00 },
+            "03INY1415": { nombre: "TAPA LATERAL DISPENSADOR DE SPRAY 800-1000 ML", pesoNeto: 92.00, pesoBruto: 92.00, ciclo: 60.00 },
+            "03INY1416": { nombre: "VENTANA DISPENSADOR SPRAY 800-1000 ML", pesoNeto: 5.50, pesoBruto: 7.90, ciclo: 25.00 },
+            "03INY1417": { nombre: "BASE DISPENSADOR SPRAY 800-1000 ML", pesoNeto: 124.00, pesoBruto: 124.00, ciclo: 40.00 },
+            "03INY1418": { nombre: "RESORTE DISPENSADORES SPRAY 800-1000 ML", pesoNeto: 33.50, pesoBruto: 33.50, ciclo: 45.00 },
+            "03INY1419": { nombre: "SEGURO DISPENSAORES DE JABON 400ML-800ML/1000ML", pesoNeto: 2.50, pesoBruto: 3.50, ciclo: 20.00 },
+            "03INY1420": { nombre: "TAPA CONJUNTO 55 NEGRO", pesoNeto: 250.00, pesoBruto: 250.00, ciclo: 45.00 },
+            "03INY1421": { nombre: "TAPA CONJUNTO 55 AMARILLO", pesoNeto: 250.00, pesoBruto: 250.00, ciclo: 45.00 },
+            "03INY1422": { nombre: "SOBRE TAPA CONJUNTO 55 NEGRO", pesoNeto: 115.00, pesoBruto: 130.00, ciclo: 40.00 },
+            "03INY1423": { nombre: "SOBRE TAPA CONJUNTO 55 AMARILLO", pesoNeto: 115.00, pesoBruto: 130.00, ciclo: 40.00 },
+            "03INY1424": { nombre: "MANIJA CONJUNTO 55 NEGRO", pesoNeto: 16.00, pesoBruto: 21.00, ciclo: 25.00 },
+            "03INY1425": { nombre: "MANIJA CONJUNTO 55 AMARILLO", pesoNeto: 16.00, pesoBruto: 21.00, ciclo: 25.00 },
+            "03INY1426": { nombre: "FILTRO INTERNO WHIRLPOOL COPA 2.0", pesoNeto: 94.00, pesoBruto: 97.00, ciclo: 56.00 },
+            "03INY1427": { nombre: "TAPA FILTRO INTERNO WHIRLPOOL COPA 2.0", pesoNeto: 29.00, pesoBruto: 29.00, ciclo: 46.00 },
+            "03INY1428": { nombre: "TAPA TIPO C 77MM CON LOGO ORANGE SIN ENSAMBLAR", pesoNeto: 24.00, pesoBruto: 27.60, ciclo: 27.00 },
+            "03INY1429": { nombre: "ENSAMBLE TAPA + MANJIA CONJUNTO 55 NEGRO", pesoNeto: 250.00, pesoBruto: 250.00, ciclo: 45.00 },
+            "03INY1430": { nombre: "ENSAMBLE TAPA + MANJIA CONJUNTO 55 AMARILLO", pesoNeto: 250.00, pesoBruto: 250.00, ciclo: 45.00 },
+            "03INY1431": { nombre: "TAPA TIPO C 53 MM ONDAS VERDE OLIVA METALIZADO SIN LINER", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 24.00 },
+            "03INY1432": { nombre: "FILTRO INTERNO HACEB COPA 2.0", pesoNeto: 90.00, pesoBruto: 100.20, ciclo: 50.00 },
+            "03INY1433": { nombre: "TAPA FILTRO INTERNO HACEB COPA 2.0", pesoNeto: 47.00, pesoBruto: 47.00, ciclo: 49.00 },
+            "03INY1434": { nombre: "CUBIERTA PLASTICA NIAGARA HMI", pesoNeto: 3.00, pesoBruto: 3.00, ciclo: 25.00 },
+            "03INY1435": { nombre: "TAPA TIPO O 53 MM CON LOGO MARLEY NEGRA SIN ENSAMBLAR", pesoNeto: 11.00, pesoBruto: 11.00, ciclo: 24.00 },
+            "03INY1436": { nombre: "CONSOLA NIAGARA INYECTADA", pesoNeto: 368.00, pesoBruto: 368.00, ciclo: 57.00 },
+            "03INY1437": { nombre: "TAPA TIPO N 66MM CAFE COLOMBIA LIS VERDE SIN LINER LIOFILIZADO", pesoNeto: 13.00, pesoBruto: 13.00, ciclo: 21.00 },
+            "03INY1438": { nombre: "TAPA TIPO N 66MM CAFE COLOMBIA LIS DORADO OCRE SIN LINER LIOFILIZADO", pesoNeto: 13.00, pesoBruto: 13.00, ciclo: 21.00 },
+            "03INY1439": { nombre: "TAPA C1 53MM  CAFE COLOMBIA ONDAS ICE (AZUL CLARO PERLADO) SIN LINER", pesoNeto: 9.80, pesoBruto: 9.80, ciclo: 21.00 },
+            "03INY1440": { nombre: "TAPA ROJA MAGNETO ESSITTY", pesoNeto: 155.00, pesoBruto: 155.00, ciclo: 45.00 },
+            "03INY1441": { nombre: "TAPA AZUL MAGNETO ESSITTY", pesoNeto: 155.00, pesoBruto: 155.00, ciclo: 45.00 },
+            "03INY1442": { nombre: "TAPA GRIS MAGNETO ESSITTY", pesoNeto: 155.00, pesoBruto: 155.00, ciclo: 45.00 },
+            "03INY1443": { nombre: "TACON GRIS MAGNETO ESSITTY", pesoNeto: 0.27, pesoBruto: 0.27, ciclo: 18.00 },
+            "03INY1444": { nombre: "BASE GRIS MAGNETO ESSITTY", pesoNeto: 75.00, pesoBruto: 75.00, ciclo: 40.00 },
+            "03INY1445": { nombre: "BOTON GRIS MAGNETO ESSITTY", pesoNeto: 4.00, pesoBruto: 4.00, ciclo: 30.00 },
+            "03INY1446": { nombre: "EMPUJADOR GRIS MAGNETO ESSITTY", pesoNeto: 32.00, pesoBruto: 32.00, ciclo: 36.00 },
+            "03INY1447": { nombre: "TAPA C1 53 MM CAFE COLOMBIA ONDAS ANIS SIN LINER", pesoNeto: 9.80, pesoBruto: 9.80, ciclo: 21.00 },
+            "03INY1448": { nombre: "TAPA TIPO C 53MM CAFE DE COLOMBIA ONDAS AMARILLO SIN LINER", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 24.00 },
+            "03INY1449": { nombre: "TAPA TIPO A 63MM VIEJO MOLINO LISA CAFE SIN LINER", pesoNeto: 8.45, pesoBruto: 10.37, ciclo: 15.00 },
+            "03INY1450": { nombre: "INYECC CONSOLA NIAGARA DIGITAL", pesoNeto: 368.00, pesoBruto: 368.00, ciclo: 57.00 },
+            "03INY1451": { nombre: "REMATE JAL FF AND 300 NEG INY MB", pesoNeto: 215.00, pesoBruto: 250.00, ciclo: 52.00 },
+            "03INY1453": { nombre: "TAPA TIPO D 63MM TIM HORTONS AZUL CLARO LISO  LIOFILIZADO", pesoNeto: 14.60, pesoBruto: 14.60, ciclo: 27.00 },
+            "03INY1454": { nombre: "TAPA TIPO O 66 MM CAFE COLOMBIA LISA VERDE DESCAFEINADO SIN LINER", pesoNeto: 31.10, pesoBruto: 31.10, ciclo: 24.00 },
+            "03INY1455": { nombre: "TAPA TIPO LIOFILIZADO 66MM TIPO F LOGO CAFÉ METALIZADO S'LINER", pesoNeto: 31.10, pesoBruto: 31.10, ciclo: 26.00 },
+            "03INY1456": { nombre: "TAPA TIPO O 53 MM CAFE COLOMBIA CAFE METALIZADO SIN LINER", pesoNeto: 10.00, pesoBruto: 10.00, ciclo: 24.00 },
+            "03INY1457": { nombre: "TAPA TIPO O 53 CAFE COLOMBIA LISA VERDE DESCAFEINADO SIN LINER", pesoNeto: 10.00, pesoBruto: 10.00, ciclo: 24.00 },
+            "03INY1458": { nombre: "TAPA TIPO O 53 MM CAFE COLOMBIA NARANJA AMARETTO SIN LINER", pesoNeto: 10.00, pesoBruto: 10.00, ciclo: 24.00 },
+            "03INY1460": { nombre: "TAPA TIPO O 53 MM CAFE COLOMBIA LISA VIOLETA (PURPURA) SIN LINER", pesoNeto: 10.00, pesoBruto: 10.00, ciclo: 24.00 },
+            "03INY1461": { nombre: "TAPA TIPO O 53 MM CAFE COLOMBIA LISA BEIGE (VAINICA) SIN LINER", pesoNeto: 10.00, pesoBruto: 10.00, ciclo: 24.00 },
+            "03INY1462": { nombre: "TAPA TIPO O 53 MM CAFE COLOMBIA LISA VERDE OLIVA SIN LINER", pesoNeto: 10.00, pesoBruto: 10.00, ciclo: 24.00 },
+            "03INY1463": { nombre: "TAPA C1 53 CAFE COLOMBIA ONDAS CAFE CARAMELO-CHOCOLATE BUEN DIA SIN LINER ELASTIC", pesoNeto: 9.80, pesoBruto: 9.80, ciclo: 21.00 },
+            "03INY1466": { nombre: "TAPA TIPO O 53 MM CAFE COLOMBIA VERDE 361C SIN LINER", pesoNeto: 10.00, pesoBruto: 10.00, ciclo: 24.00 },
+            "03INY1467": { nombre: "TAPA TIPO C CAFE COLOMBIA BEIGE ESTRIADA (VAINICA) SIN LINER", pesoNeto: 13.50, pesoBruto: 16.30, ciclo: 21.00 },
+            "03INY1469": { nombre: "TAPA TIPO A 63MM VIEJO MOLINO PREMIUM DORADO NUEVO LOGO SIN LINER", pesoNeto: 10.50, pesoBruto: 11.00, ciclo: 16.00 }
+        };
+        
+        // Lista de máquinas
+        const maquinas = ["1000A", "1000B", "1000C", "1000D", "100A", "1080A", "1080B", "1100A", "1100B", "110A", "1200A", "1500A", "1600A", "1600B", "160A", "165A", "165B", "165C", "165D", "1750A", "180A", "190A", "200A", "200C", "200D", "200E", "200F", "2100A", "220A", "240A", "250A", "250B", "250C", "280A", "280B", "280C", "280D", "280E", "280F", "280G", "280H", "280I", "3000A", "300B", "350A", "350B", "350C", "350D", "350E", "350F", "350G", "350H", "350I", "35A", "360A", "360B", "375A", "375B", "375C", "380A", "380B", "380C", "380D", "380E", "380F", "390A", "4000A", "400A", "40A", "440A", "450A", "450B", "470A", "470B", "470C", "480A", "480B", "500C", "500D", "50A", "530A", "60A", "60B", "650A", "650B", "65A", "700A", "71A", "730A", "75A", "76A", "76B", "7A", "7B", "800A", "80A", "840A", "85A", "85B", "85C", "880A", "880B", "900A", "950A", "950B"];
+        
+        let registros = [];
+        let currentFocus = -1;
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            cargarMaquinas();
+            document.getElementById('fecha').valueAsDate = new Date();
+            cargarRegistrosGuardados();
+            setupAutocomplete();
+        });
+        
+        function cargarMaquinas() {
+            const select = document.getElementById('maquina');
+            maquinas.forEach(m => {
+                const option = document.createElement('option');
+                option.value = m;
+                option.textContent = m;
+                select.appendChild(option);
+            });
+        }
+        
+        function setupAutocomplete() {
+            const input = document.getElementById('codigoProducto');
+            const list = document.getElementById('autocompleteList');
+            
+            input.addEventListener('input', function() {
+                const val = this.value.toUpperCase().trim();
+                list.innerHTML = '';
+                currentFocus = -1;
+                
+                if (!val) {
+                    list.classList.remove('show');
+                    return;
+                }
+                
+                const matches = Object.keys(productosDB)
+                    .filter(code => code.includes(val))
+                    .slice(0, 10);
+                
+                if (matches.length === 0) {
+                    list.classList.remove('show');
+                    return;
+                }
+                
+                matches.forEach(code => {
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+                    item.innerHTML = `
+                        <div class="autocomplete-code">${code}</div>
+                        <div class="autocomplete-name">${productosDB[code].nombre}</div>
+                    `;
+                    item.addEventListener('click', () => selectProduct(code));
+                    list.appendChild(item);
+                });
+                
+                list.classList.add('show');
+            });
+            
+            input.addEventListener('keydown', function(e) {
+                const items = list.getElementsByClassName('autocomplete-item');
+                if (e.keyCode === 40) {
+                    currentFocus++;
+                    addActive(items);
+                } else if (e.keyCode === 38) {
+                    currentFocus--;
+                    addActive(items);
+                } else if (e.keyCode === 13) {
+                    e.preventDefault();
+                    if (currentFocus > -1 && items[currentFocus]) {
+                        items[currentFocus].click();
+                    }
+                }
+            });
+            
+            document.addEventListener('click', function(e) {
+                if (e.target !== input) {
+                    list.classList.remove('show');
+                }
+            });
+        }
+        
+        function addActive(items) {
+            if (!items || items.length === 0) return;
+            removeActive(items);
+            if (currentFocus >= items.length) currentFocus = 0;
+            if (currentFocus < 0) currentFocus = items.length - 1;
+            items[currentFocus].classList.add('autocomplete-active');
+        }
+        
+        function removeActive(items) {
+            for (let item of items) {
+                item.classList.remove('autocomplete-active');
+            }
+        }
+        
+        function selectProduct(code) {
+            const producto = productosDB[code];
+            document.getElementById('codigoProducto').value = code;
+            document.getElementById('codigoPieza').value = producto.nombre;
+            document.getElementById('pesoNetoTeorico').value = producto.pesoNeto;
+            document.getElementById('pesoBrutoTeorico').value = producto.pesoBruto;
+            document.getElementById('cicloFicha').value = producto.ciclo;
+            document.getElementById('autocompleteList').classList.remove('show');
+            mostrarToast('✅ Producto autocargado');
+        }
+        
+        function agregarRegistro() {
+            const fecha = document.getElementById('fecha').value;
+            const turno = document.getElementById('turno').value;
+            const lider = document.getElementById('lider').value;
+            const maquina = document.getElementById('maquina').value;
+            const codigoProducto = document.getElementById('codigoProducto').value;
+            const ordenProduccion = document.getElementById('ordenProduccion').value;
+            const codigoPieza = document.getElementById('codigoPieza').value;
+            const operarios = document.getElementById('operarios').value;
+            
+            if (!fecha || !turno || !lider) {
+                mostrarToast('❌ Completa Fecha, Turno y Líder');
+                return;
+            }
+            
+            if (!maquina || !codigoProducto || !codigoPieza || !operarios) {
+                mostrarToast('❌ Completa los campos obligatorios');
+                return;
+            }
+            
+            const registro = {
+                id: Date.now(),
+                maquina: maquina,
+                codigoProducto: codigoProducto,
+                ordenProduccion: ordenProduccion || '',
+                codigoPieza: codigoPieza,
+                pesoBrutoTeorico: document.getElementById('pesoBrutoTeorico').value || '',
+                pesoBrutoReal: document.getElementById('pesoBrutoReal').value || '',
+                pesoNetoTeorico: document.getElementById('pesoNetoTeorico').value || '',
+                pesoNetoReal: document.getElementById('pesoNetoReal').value || '',
+                cicloFicha: document.getElementById('cicloFicha').value || '',
+                cicloReal: document.getElementById('cicloReal').value || '',
+                operarios: operarios,
+                instructivo: document.getElementById('instructivo').value,
+                mattec: document.getElementById('mattec').value,
+                alerta: document.getElementById('alerta').value,
+                cavidades: document.getElementById('cavidades').value,
+                observaciones: document.getElementById('observaciones').value
+            };
+            
+            registros.push(registro);
+            guardarLocal();
+            renderizar();
+            limpiarFormulario();
+            mostrarToast('✅ Registro agregado');
+        }
+        
+        function renderizar() {
+            const lista = document.getElementById('recordsList');
+            const contador = document.getElementById('recordCount');
+            
+            contador.textContent = `📝 ${registros.length} registro${registros.length !== 1 ? 's' : ''}`;
+            
+            if (registros.length === 0) {
+                lista.innerHTML = '<div class="empty-state"><h3>No hay registros</h3><p>Completa el formulario para agregar registros</p></div>';
+                return;
+            }
+            
+            lista.innerHTML = registros.map(r => `
+                <div class="record-card">
+                    <div class="record-card-header">
+                        <h3>🔧 ${r.maquina} - ${r.codigoProducto}</h3>
+                        <button class="btn btn-danger" onclick="eliminar(${r.id})" style="padding: 0.5rem 1rem;">🗑️</button>
+                    </div>
+                    <div class="record-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Código Producto</span>
+                            <span class="detail-value">${r.codigoProducto}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Nombre Pieza</span>
+                            <span class="detail-value">${r.codigoPieza}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Orden</span>
+                            <span class="detail-value">${r.ordenProduccion || '-'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Peso Bruto</span>
+                            <span class="detail-value">T: ${r.pesoBrutoTeorico || '-'} / R: ${r.pesoBrutoReal || '-'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Peso Neto</span>
+                            <span class="detail-value">T: ${r.pesoNetoTeorico || '-'} / R: ${r.pesoNetoReal || '-'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Ciclo</span>
+                            <span class="detail-value">F: ${r.cicloFicha || '-'} / R: ${r.cicloReal || '-'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Operarios</span>
+                            <span class="detail-value">${r.operarios}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Instructivo</span>
+                            <span class="detail-value">${r.instructivo === 'SÍ' ? '<span class="badge badge-success">SÍ</span>' : '<span class="badge badge-danger">NO</span>'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Mattec</span>
+                            <span class="detail-value">${r.mattec === 'SÍ' ? '<span class="badge badge-success">SÍ</span>' : '<span class="badge badge-danger">NO</span>'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Alerta</span>
+                            <span class="detail-value">${r.alerta === 'SÍ' ? '<span class="badge badge-danger">SÍ</span>' : '<span class="badge badge-success">NO</span>'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Cavidades</span>
+                            <span class="detail-value">${r.cavidades === 'SÍ' ? '<span class="badge badge-success">SÍ</span>' : '<span class="badge badge-danger">NO</span>'}</span>
+                        </div>
+                        ${r.observaciones ? `<div class="detail-item" style="grid-column: 1 / -1;"><span class="detail-label">Observaciones</span><span class="detail-value">${r.observaciones}</span></div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function eliminar(id) {
+            if (confirm('¿Eliminar este registro?')) {
+                registros = registros.filter(r => r.id !== id);
+                guardarLocal();
+                renderizar();
+                mostrarToast('✅ Registro eliminado');
+            }
+        }
+        
+        function limpiarFormulario() {
+            document.getElementById('maquina').value = '';
+            document.getElementById('codigoProducto').value = '';
+            document.getElementById('ordenProduccion').value = '';
+            document.getElementById('codigoPieza').value = '';
+            document.getElementById('pesoBrutoTeorico').value = '';
+            document.getElementById('pesoBrutoReal').value = '';
+            document.getElementById('pesoNetoTeorico').value = '';
+            document.getElementById('pesoNetoReal').value = '';
+            document.getElementById('cicloFicha').value = '';
+            document.getElementById('cicloReal').value = '';
+            document.getElementById('operarios').value = '';
+            document.getElementById('instructivo').value = 'NO';
+            document.getElementById('mattec').value = 'NO';
+            document.getElementById('alerta').value = 'NO';
+            document.getElementById('cavidades').value = 'NO';
+            document.getElementById('observaciones').value = '';
+        }
+        
+        function limpiarTodo() {
+            if (confirm('¿Eliminar TODOS los registros?')) {
+                registros = [];
+                guardarLocal();
+                renderizar();
+                mostrarToast('✅ Todo eliminado');
+            }
+        }
+        
+        function descargarExcel() {
+            const fecha = document.getElementById('fecha').value;
+            const turno = document.getElementById('turno').value;
+            const lider = document.getElementById('lider').value;
+            
+            if (registros.length === 0) {
+                mostrarToast('❌ No hay registros para descargar');
+                return;
+            }
+            
+            // Crear datos para Excel
+            const datosExcel = [
+                [`RECOLECCIÓN DE DATOS - RONDA EN PLANTA EQUIPOS AUTÓNOMOS (MANIZALES)`],
+                [``],
+                [`FECHA: ${fecha}`, `TURNO: ${turno}`, `LÍDER: ${lider}`],
+                [``],
+                [
+                    'MÁQUINA', 'CÓDIGO PRODUCTO', 'ORDEN PRODUCCIÓN', 'NOMBRE PIEZA',
+                    'PESO BRUTO TEÓRICO', 'PESO BRUTO REAL', 'PESO NETO TEÓRICO', 'PESO NETO REAL',
+                    'CICLO FICHA', 'CICLO REAL', 'OPERARIOS', 'INSTRUCTIVO', 'MATTEC', 'ALERTA', 'CAVIDADES', 'OBSERVACIONES'
+                ]
+            ];
+            
+            // Agregar registros
+            registros.forEach(r => {
+                datosExcel.push([
+                    r.maquina || '',
+                    r.codigoProducto || '',
+                    r.ordenProduccion || '',
+                    r.codigoPieza || '',
+                    r.pesoBrutoTeorico || '',
+                    r.pesoBrutoReal || '',
+                    r.pesoNetoTeorico || '',
+                    r.pesoNetoReal || '',
+                    r.cicloFicha || '',
+                    r.cicloReal || '',
+                    r.operarios || '',
+                    r.instructivo || '',
+                    r.mattec || '',
+                    r.alerta || '',
+                    r.cavidades || '',
+                    r.observaciones || ''
+                ]);
+            });
+            
+            // Crear workbook y worksheet
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(datosExcel);
+            
+            // Autoajustar columnas
+            const colWidths = [
+                {wch: 12}, {wch: 15}, {wch: 18}, {wch: 30},
+                {wch: 18}, {wch: 18}, {wch: 18}, {wch: 18},
+                {wch: 12}, {wch: 12}, {wch: 20}, {wch: 12},
+                {wch: 12}, {wch: 12}, {wch: 12}, {wch: 25}
+            ];
+            ws['!cols'] = colWidths;
+            
+            // Estilos para encabezados
+            const headerRange = XLSX.utils.decode_range(ws['!ref']);
+            for (let C = headerRange.s.c; C <= 4; ++C) {
+                const address = XLSX.utils.encode_cell({r: 4, c: C});
+                if (!ws[address]) continue;
+                ws[address].s = {
+                    font: { bold: true, color: { rgb: "FFFFFF" }, sz: 12 },
+                    fill: { fgColor: { rgb: "047857" } },
+                    alignment: { horizontal: "center", vertical: "center" }
+                };
+            }
+            
+            XLSX.utils.book_append_sheet(wb, ws, "Registros");
+            XLSX.writeFile(wb, `Ronda_Planta_${fecha}_${turno}.xlsx`);
+            
+            mostrarToast('✅ 📊 Excel descargado correctamente');
+        }
+        
+        function guardarLocal() {
+            localStorage.setItem('registrosRonda', JSON.stringify(registros));
+        }
+        
+        function cargarRegistrosGuardados() {
+            const guardados = localStorage.getItem('registrosRonda');
+            if (guardados) {
+                registros = JSON.parse(guardados);
+                renderizar();
+            }
+        }
+        
+        function mostrarToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>
